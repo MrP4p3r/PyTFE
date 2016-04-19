@@ -93,7 +93,12 @@ def EncryptBuffer(bi,bo,blength,pas,alg="FEAL 4",hasht="MD5"):
                           offset    = _offset,
                           filesize  = blength )
     #write header and first chunk
-    bo.write(header)
+    try:
+        bo.write(header)
+    except:
+        print(repr(header))
+        print(repr(bo))
+        
     bo.write(hash)
     bo.write(salt)
     echunk = _enc.EncryptChunk(chunk,clen)
@@ -138,6 +143,24 @@ def DecryptBuffer(bi,bo,pas):
         chunk = _dec.DecryptChunk(echunk,clen)
         bo.write(echunk[:blength]); blength -= _chs
     del _dec
+
+def isTfeFile(path):
+    f = open(path,'rb')
+    try:
+        header = f.read(HEADER_LENGTH)
+        f.close()
+        alg,hasht,offset,blength = parseheader(header)
+        if alg in algtab and hasht in hashtab:
+            print('тфу')
+            return True
+        else:
+            print('не тфу')
+            return False
+    except Exception as e:
+        print('ошибочка')
+        print(e)
+        return False
+
 
 # ---------- ФУНКЦИИ ДЛЯ ФАЙЛОВ ----------
 
