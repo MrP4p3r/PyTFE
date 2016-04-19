@@ -1,4 +1,4 @@
-from os.path import abspath
+from os.path import abspath,dirname,realpath,join
 from ctypes import *
 
 class feal4:
@@ -12,12 +12,8 @@ class feal4:
             raise ValueError('Key size must be at least %i bytes'%self.keylength)
         self.key = key[:self.keylength]
         self._key = create_string_buffer(self.key)
-        self.dll = WinDLL(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                'feal4.dll'
-            )
-        ) # иногда случайно выдает WinError 487
+        # иногда случайно выдает WinError 487
+        self.dll = WinDLL( join(dirname(realpath(__file__)),'feal4.dll'))
     def __del__(self):
         try:
             libHandle = self.dll._handle
