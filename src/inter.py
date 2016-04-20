@@ -150,10 +150,12 @@ class Main(QMainWindow):
         if _ext in self._FILE_FORMATS: ext = _ext
         
         if ext == '.tfe':
+            # ОТКРЫВАЛКА TFE
             self.open_from_tfe(path)
             ...
         elif ext == '.gpg':
-            # ВЫЗВАТЬ ОТКРЫВАЛКУ GPG
+            # ОТКРЫВАЛКА GPG
+            self.open_from_gpg(path)
             ...
         
         return
@@ -181,10 +183,12 @@ class Main(QMainWindow):
         print(path,ext)
         
         if ext == '.tfe':
+            # СОХРАНЯЛКА В TFE
             self.save_to_tfe(path)
             ...
         elif ext == '.gpg':
-            # ВЫЗВАТЬ СОХРАНЯЛКУ В GPG
+            # СОХРАНЯЛКА В GPG
+            self.save_to_gpg(path)
             ...
         
         return
@@ -203,7 +207,7 @@ class Main(QMainWindow):
         d.setLabelText('Введите пароль:')
         while True:
             # ввод пароля
-            if not d.exec_(): return
+            if not d.exec(): return
             pas1 = d.textValue()
             if len(pas1)<4:
                 d.setLabelText('Слишком короткий пароль. Введите пароль:')
@@ -222,7 +226,9 @@ class Main(QMainWindow):
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
         bo = open(path,'wb')
-        res = tfe.EncryptBuffer(bi,bo,len(b),pas)
+        res = 0
+        try: tfe.EncryptBuffer(bi,bo,len(b),pas)
+        except: res = 1
         bo.close()
         if res == 0:
             ... # эмит save_ok
@@ -241,7 +247,7 @@ class Main(QMainWindow):
         d.setWindowTitle('Пароль')
         d.setLabelText('Введите пароль:')
         while True:
-            if not d.exec_(): return
+            if not d.exec(): return
             pas1 = d.textValue()
             d.setTextValue('')
             pas = pas1.encode('utf-8')          # байты, байты
@@ -267,6 +273,90 @@ class Main(QMainWindow):
                 ... # msg ошибочка
                 return
         
+    def save_to_gpg(self,path):
+        sym = MDialogGPGSym.getSym(self)
+        if sym == '-c':
+            d = QInputDialog(self)
+            d.resize(300,d.height())
+            d.setTextEchoMode(QLineEdit.Password)
+            d.setWindowTitle('Пароль')
+            d.setLabelText('Введите пароль:')
+            while True:
+                # ввод пароля
+                if not d.exec_(): return
+                pas1 = d.textValue()
+                if len(pas1)<4:
+                    d.setLabelText('Слишком короткий пароль. Введите пароль:')
+                    continue
+                d.setTextValue('')
+                d.setLabelText('Повторите пароль:')
+                # повторный ввод пароля
+                if not d.exec(): return
+                pas2 = d.textValue()
+                # проверка пароля
+                if pas1!=pas2: d.setLabelText('Пароли не совпадают. Введите пароль:')
+                else: break
+                d.setTextValue('')
+            #pas = pas1.encode('utf-8')          # пароль в байтах
+            pas = pas1
+            s = self.text.toPlainText()
+            b = s.encode('utf-8')               # КОДИРОВОЧКА
+            #bi = BytesIO(b)
+            #bo = open(path,'wb')
+            res = 0
+            try:
+                p = subprocess.Popen(
+                    [
+                        'gpg','-c','--no-use-agent','--passphrase',pas,
+                        '--batch','--yes','-o',path
+                    ],
+                    stdin = subprocess.PIPE
+                )
+                print(p.communicate(b))
+                print(p.terminate())
+            except: res = 1
+            print(res)
+            #bo.close()
+            if res == 0:
+                ... # эмит save_ok
+                return
+            else:
+                ... # msgbox save_error ???
+                return
+        elif sym == '-e':
+            d = QInputDialog(self)
+            d.resize(300,d.height())
+            d.setTextEchoMode(QLineEdit.Normal)
+            d.setWindowTitle('Получатель')
+            d.setLabelText('Введите ?????:')
+            # ввод пароля
+            if not d.exec(): return
+            name = d.textValue()
+            s = self.text.toPlainText()
+            b = s.encode('utf-8')               # КОДИРОВОЧКА
+            #bi = BytesIO(b)
+            #bo = open(path,'wb')
+            res = 0
+            try:
+                p = subprocess.Popen(
+                    ['gpg','-e','--no-use-agent','-r',name,'-o',path],
+                    stdin = subprocess.PIPE
+                )
+                p.communicate(b)
+                p.terminate()
+            except: res = 1
+            #bo.close()
+            if res == 0:
+                ... # эмит save_ok
+                return
+            else:
+                ... # msgbox save_error ???
+                return
+    
+    def open_from_gpg(self,path):
+        # ['gpg','--no-use-agent','--batch','--yes','-d',path] # symmetric
+        # ['gpg','--no-use-agent','--batch','--yes ????????????
+        ...
 
 
 
@@ -291,123 +381,51 @@ class MRadioButton(QRadioButton):
     def _valueEmitter(self,b):
         self.clicked.emit(self.rvalue)
 
-class MSaveDialog(QDialog):
-    data = {
-        'text': None,
-        'driver': None
-    }
-    fldst = {
-        'tfe':   lambda x: ( x.lab.setText('Пароль:'), \
-                             x.field.setEchoMode(QLineEdit.Password) ),
-        'gpg-s': lambda x: ( x.lab.setText('Пароль:'), \
-                             x.field.setEchoMode(QLineEdit.Password) ),
-        'gpg-a': lambda x: ( x.lab.setText('Получатель:'), \
-                             x.field.setEchoMode(QLineEdit.Normal) ),
-    }
-    def __init__(self,iparams,*args):
+class MDialogGPGSym(QDialog):
+    sym = None
+    def __init__(self,*args):
         super().__init__(*args)
         self.setWindowFlags(self.windowFlags()&~Qt.WindowContextHelpButtonHint)
-        self.setWindowTitle(iparams['title'])
-        lo = QGridLayout()
-        self.setLayout(lo)
-        
-        r_Group = QButtonGroup()
-        r_tfe  = MRadioButton('TFE','tfe')
-        r_gpgs = MRadioButton('GPG (Symmetric)','gpg-s')
-        r_gpga = MRadioButton('GPG (Assymetric)','gpg-a')
-        r_Group.addButton(r_tfe)
-        r_Group.addButton(r_gpgs)
-        r_Group.addButton(r_gpga)
-        r_tfe.clicked.connect(self.udriver)
-        r_gpgs.clicked.connect(self.udriver)
-        r_gpga.clicked.connect(self.udriver)
-        r_gpga.clicked.connect(self.upassphrase)
+        self.setWindowTitle('Тип шифрования GPG')
+        lo = QGridLayout(self)
         
         self.lab = QLabel()
-        self.lab.setText('Пароль:')
+        self.lab.setText('Выберите тип шифрования:')
         
-        self.field = QLineEdit()
-        self.field.setEchoMode(QLineEdit.Password)
-        self.field.textChanged.connect(self.upassphrase)
+        r_Group = QButtonGroup()
+        r_symm = MRadioButton('Симметричное','-c')
+        r_asym = MRadioButton('Ассиметричное','-e')
+        r_Group.addButton(r_symm)
+        r_Group.addButton(r_asym)
+        r_symm.clicked.connect(self.changesym)
+        r_asym.clicked.connect(self.changesym)
         
-        r_tfe.click()
+        r_symm.click()
+        
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal,
+            self
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        
+        
+        lo.addWidget(self.lab, 1,1)
+        lo.addWidget(r_symm,   2,1)
+        lo.addWidget(r_asym,   3,1)
+        lo.addWidget(buttons,  4,1)
         
         self.adjustSize()
         self.setMinimumWidth(350)
         self.setFixedSize(self.size())
-        
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal,
-            self
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        
-        lo.addWidget(r_tfe,      1,1,1,2)
-        lo.addWidget(r_gpgs,     2,1,1,2)
-        lo.addWidget(r_gpga,     3,1,1,2)
-        lo.addWidget(self.lab,   4,1)
-        lo.addWidget(self.field, 4,2)
-        lo.addWidget(buttons,    5,2)
-        
-        self.field.setFocus()
     
-    def upassphrase(self,p):
-        self.data['text'] = p
-    
-    def udriver(self,d):
-        self.fldst[d](self)
-        self.field.setText('')
-        self.data['driver'] = d
+    def changesym(self,v):
+        self.sym = v
     
     @staticmethod
-    def getEncParams(*args):
-        dialog = MSaveDialog(*args)
-        result = dialog.exec()
-        return dialog.data if result == QDialog.Accepted else None
-
-class MLineDialog(QDialog):
-    data = { 'text': None }
-    def __init__(self,iparams,*args):
-        super().__init__(*args)
-        self.setWindowTitle(iparams['title'])
-        self.lab = QLabel()
-        self.lab.setText(iparams['label'])
-        
-        lo = QGridLayout()
-        self.setLayout(lo)
-        
-        self.field = QLineEdit()
-        self.field.setEchoMode(iparams['echomode'])
-        self.field.textChanged.connect(self.upassphrase)
-        
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal,
-            self
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        
-        lo.addWidget(self.lab,1,1)
-        lo.addWidget(self.field,1,2)
-        lo.addWidget(buttons,2,1,1,2)
-    
-    def upassphrase(self,p):
-        self.data['text'] = p
-    
-    @staticmethod
-    def getText(*args):
-        dialog = MLineDialog(*args)
-        result = dialog.exec()
-        return dialog.data if result == QDialog.Accepted else None
-
-
-
-
-
-
-
-
+    def getSym(*args):
+        dialog = MDialogGPGSym(*args)
+        if dialog.exec(): return dialog.sym
+        else: return None
 
