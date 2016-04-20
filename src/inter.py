@@ -57,26 +57,33 @@ class Main(QMainWindow):
         self.setWindowIcon(self.app_icon)
         
         # widgets
-        self.text = QPlainTextEdit()
-        self.text.setFrameStyle(QFrame.NoFrame)
+        self.initText() # creates self.text
         self.setCentralWidget(self.text)
         self.initMenubar()
         self.initStatusbar()
-        
-        self.text.setStyleSheet("""
-            QTextEdit {
-                font: 10pt Consolas;
-                background-color: #fdf6e3;
-                color: #586e75;
-                selection-background-color: #586e75;
-                selection-color: #fdf6e3;
-            }
-        """)
-        #line number color: #93a1a1
-        #line number background color: #eee8d5
     
     def updateWindowTitle(self):
         self.setWindowTitle(self.APP_TITLE)
+    
+    def initText(self):
+        self.text = QPlainTextEdit()
+        self.text.setFrameStyle(QFrame.NoFrame)
+        p = self.text.palette()
+        f = QFont()
+        
+        p.setColor(QPalette.Base,QColor('#fdf6e3'))
+        p.setColor(QPalette.Text,QColor('#586e75'))
+        p.setColor(QPalette.Highlight,QColor('#586e75'))
+        p.setColor(QPalette.HighlightedText,QColor('#fdf6e3'))
+        
+        # line number color : #93a1a1
+        # line number background color : #eee8d5
+        
+        f.setFamily('Courier New')
+        f.setPointSize(10)
+        
+        self.text.setPalette(p)
+        self.text.setFont(f)
     
     def initMenubar(self):
         menubar = self.menuBar()
