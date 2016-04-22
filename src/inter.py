@@ -229,14 +229,17 @@ class Main(QMainWindow):
             else: break
             d.setTextValue('')
         pas = pas1.encode('utf-8')          # пароль в байтах
+        print(pas)
         s = self.text.toPlainText()
+        print(s)
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
-        bo = open(path,'wb')
-        res = 0
-        try: tfe.EncryptBuffer(bi,bo,len(b),pas)
-        except: res = 1
-        bo.close()
+        with open(path,'wb') as bo:
+            res = 0
+            try: tfe.EncryptBuffer(bi,bo,len(b),pas)
+            except: res = 1
+        print(res)
+        #bo.close()
         if res == 0:
             ... # эмит save_ok
             return
@@ -258,13 +261,13 @@ class Main(QMainWindow):
             pas1 = d.textValue()
             d.setTextValue('')
             pas = pas1.encode('utf-8')          # байты, байты
-            bi  = open(path,'rb')
             bo  = BytesIO()
-            res = 0
-            try: tfe.DecryptBuffer(bi,bo,pas)
-            except ValueError:     res = 1
-            except Exception as e: print('неясная ошибочка'); print(e)
-            bi.close()
+            with open(path,'rb') as bi:
+                res = 0
+                try: tfe.DecryptBuffer(bi,bo,pas)
+                except ValueError:     res = 1
+                except Exception as e: print('неясная ошибочка'); print(e)
+            #bi.close()
             if res == 0:
                 print('расшифровалось, ага')
                 bo.seek(0,0)
