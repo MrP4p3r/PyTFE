@@ -4,6 +4,7 @@
 import sys
 import os
 import subprocess
+import traceback
 
 from io import BytesIO
 
@@ -13,16 +14,27 @@ from PyQt5.QtCore    import *
 
 import tfe
 
+OK = 0
+NOT_TEXT = 1
+INTERNAL_ERROR = 2
+
 class Main(QMainWindow):
     APP_TITLE = 'Python TFE'
     WORK_DIR  = '.'
     PATH      = None
-    FILE_PATH = None
     FILE_FORMATS = """
         Формат TFE (*.tfe);;
         Формат GPG (*.gpg)
     """
     _FILE_FORMATS = ['.tfe','.gpg']
+    
+    # параметры открытого файла
+    FILE_FORMAT = None
+    FILE_PATH = None
+    FILE_NAME = 'Untitled'
+    FILE_PASSPHRASE = None
+    FILE_OPENED = False
+    FILE_SAVED = True
     
     def __init__(self,path,*args):
         self.app = QApplication(sys.argv)
@@ -63,10 +75,17 @@ class Main(QMainWindow):
         self.initStatusbar()
     
     def updateWindowTitle(self):
-        self.setWindowTitle(self.APP_TITLE)
+        new_title = ''
+        if not self.FILE_SAVED: new_title += '* '
+        new_title += self.FILE_NAME
+        new_title += ' - ' + self.APP_TITLE
+        self.setWindowTitle(new_title)
     
     def initText(self):
         self.text = QPlainTextEdit()
+        
+        self.text.textChanged.connect(self.textChangedHandler)
+        
         self.text.setFrameStyle(QFrame.NoFrame)
         p = self.text.palette()
         f = QFont()
@@ -141,10 +160,14 @@ class Main(QMainWindow):
             QLabel { padding: 0 0 }
         """)
     
+    # ---------- MENU FUNCTIONS ----------
+    
     def f_new(self):
+        # ATTENTION!
         subprocess.Popen('python '+sys.argv[0],shell=False)
     
     def f_open(self):
+        suggested_name = os.path.join(self.WORK_DIR,'*.*')
         path,ext = QFileDialog.getOpenFileName(
             self,
             'Открыть файл',
@@ -157,47 +180,64 @@ class Main(QMainWindow):
         if _ext in self._FILE_FORMATS: ext = _ext
         
         if ext == '.tfe':
-            # ОТКРЫВАЛКА TFE
-            self.open_from_tfe(path)
-            ...
+            res = self.open_from_tfe(path)
         elif ext == '.gpg':
-            # ОТКРЫВАЛКА GPG
-            self.open_from_gpg(path)
-            ...
+            res = self.open_from_gpg(path)
+        
+        if res == OK:
+            self.openOk()
+        elif res == INTERNAL_ERROR:
+            self.openError(res)
+        elif res == NOT_SUPPORTED:
+            self.openError(res)
         
         return
     
     def f_save(self):
-        if self.FILE_PATH is None:
+        if self.FILE_OPENED:
+            # СОХРАНИТЬ ФАЙЛ С ТЕКУЩИМИ ОПЦИЯМИ
+            if self.FILE_FORMAT == '.tfe':
+                res = self.save_to_tfe(self.FILE_PATH)
+            elif self.FILE_FORMAT == '.gpg':
+                res = self.save_to_gpg(self.FILE_PATH)
+            if res == OK:
+                self.saveOk()
+            elif res == INTERNAL_ERROR:
+                self.saveError(res)
+            self.updateWindowTitle()
+        else:
+            # СОХРАНИТЬ КАК
             self.f_save_as()
-            return
         
-        # СОХРАНИТЬ ФАЙЛ С ТЕКУЩИМИ ОПЦИЯМИ
     
     def f_save_as(self):
         # запрос файла у пользователя
+        self.FILE_OPENED = False
+        if self.FILE_PATH is None:
+            suggested_name = os.path.join(self.WORK_DIR,self.FILE_NAME)
+        else:
+            suggested_name = self.FILE_PATH
         path,ext = QFileDialog.getSaveFileName(
             self,
             'Сохранить файл',
-            self.WORK_DIR,
+            suggested_name,
             self.FILE_FORMATS
         )
-        if path is None: return
+        if not path: return
         
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
         
-        print(path,ext)
-        
         if ext == '.tfe':
-            # СОХРАНЯЛКА В TFE
-            self.save_to_tfe(path)
-            ...
+            res = self.save_to_tfe(path)
         elif ext == '.gpg':
-            # СОХРАНЯЛКА В GPG
-            self.save_to_gpg(path)
-            ...
+            res = self.save_to_gpg(path)
         
+        if res == OK:
+            self.saveOk()
+        elif res == INTERNAL_ERROR:
+            self.saveError(res)
+        self.updateWindowTitle()
         return
     
     def f_esc(self):
@@ -206,86 +246,17 @@ class Main(QMainWindow):
     def v_triggerwow(self):
         ...
     
-    def save_to_tfe(self,path):
-        d = QInputDialog(self)
-        d.resize(300,d.height())
-        d.setTextEchoMode(QLineEdit.Password)
-        d.setWindowTitle('Пароль')
-        d.setLabelText('Введите пароль:')
-        while True:
-            # ввод пароля
-            if not d.exec(): return
-            pas1 = d.textValue()
-            if len(pas1)<4:
-                d.setLabelText('Слишком короткий пароль. Введите пароль:')
-                continue
-            d.setTextValue('')
-            d.setLabelText('Повторите пароль:')
-            # повторный ввод пароля
-            if not d.exec(): return
-            pas2 = d.textValue()
-            # проверка пароля
-            if pas1!=pas2: d.setLabelText('Пароли не совпадают. Введите пароль:')
-            else: break
-            d.setTextValue('')
-        pas = pas1.encode('utf-8')          # пароль в байтах
-        print(pas)
-        s = self.text.toPlainText()
-        print(s)
-        b = s.encode('utf-8')               # КОДИРОВОЧКА
-        bi = BytesIO(b)
-        with open(path,'wb') as bo:
-            res = 0
-            try: tfe.EncryptBuffer(bi,bo,len(b),pas)
-            except: res = 1
-        print(res)
-        #bo.close()
-        if res == 0:
-            ... # эмит save_ok
-            return
-        else:
-            ... # msgbox save_error ???
-            return
+    # ---------- EVENT HANDLERS ----------
     
-    def open_from_tfe(self,path):
-        if not tfe.isTfeFile(path):
-            ... # msgbox ошибка
-            return
-        d = QInputDialog(self)
-        d.resize(300,d.height())
-        d.setTextEchoMode(QLineEdit.Password)
-        d.setWindowTitle('Пароль')
-        d.setLabelText('Введите пароль:')
-        while True:
-            if not d.exec(): return
-            pas1 = d.textValue()
-            d.setTextValue('')
-            pas = pas1.encode('utf-8')          # байты, байты
-            bo  = BytesIO()
-            with open(path,'rb') as bi:
-                res = 0
-                try: tfe.DecryptBuffer(bi,bo,pas)
-                except ValueError:     res = 1
-                except Exception as e: print('неясная ошибочка'); print(e)
-            #bi.close()
-            if res == 0:
-                print('расшифровалось, ага')
-                bo.seek(0,0)
-                b = bo.read()
-                s = b.decode('utf-8')           # КОДИРОВОЧКА
-                self.text.setPlainText(s)
-                ... # эмит open_ok
-                return
-            elif res == 1:
-                d.setLabelText('Неверный пароль. Введите пароль:')
-                continue
-            else:
-                ... # msg ошибочка
-                return
-        
-    def save_to_gpg(self,path):
-        sym = MDialogGPGSym.getSym(self)
-        if sym == '-c':
+    def textChangedHandler(self):
+        if self.FILE_SAVED:
+            self.FILE_SAVED = False
+            self.updateWindowTitle()
+    
+    # ---------- OTHER FUNCTIONS ----------
+    
+    def save_to_tfe(self,path):
+        if not self.FILE_OPENED:
             d = QInputDialog(self)
             d.resize(300,d.height())
             d.setTextEchoMode(QLineEdit.Password)
@@ -293,7 +264,7 @@ class Main(QMainWindow):
             d.setLabelText('Введите пароль:')
             while True:
                 # ввод пароля
-                if not d.exec_(): return
+                if not d.exec(): return
                 pas1 = d.textValue()
                 if len(pas1)<4:
                     d.setLabelText('Слишком короткий пароль. Введите пароль:')
@@ -307,8 +278,104 @@ class Main(QMainWindow):
                 if pas1!=pas2: d.setLabelText('Пароли не совпадают. Введите пароль:')
                 else: break
                 d.setTextValue('')
-            #pas = pas1.encode('utf-8')          # пароль в байтах
-            pas = pas1
+            pas = pas1.encode('utf-8')          # пароль в байтах
+        else:
+            pas = self.FILE_PASSPHRASE
+        print(pas)
+        s = self.text.toPlainText()
+        b = s.encode('utf-8')               # КОДИРОВОЧКА
+        bi = BytesIO(b)
+        with open(path,'wb') as bo:
+            res = 0
+            try: tfe.EncryptBuffer(bi,bo,len(b),pas)
+            except: res = 1
+        print(res)
+        if res == 0:
+            self.fileOpened('.tfe',path,pas)
+            return OK
+        else:
+            os.remove(path) # MAY CAUSE PROBLEMS
+            return INTERNAL_ERROR
+    
+    def open_from_tfe(self,path):
+        if not tfe.isTfeFile(path):
+            return NOT_SUPPORTED
+        d = QInputDialog(self)
+        d.resize(300,d.height())
+        d.setTextEchoMode(QLineEdit.Password)
+        d.setWindowTitle('Пароль')
+        d.setLabelText('Введите пароль:')
+        while True:
+            if not d.exec(): return
+            pas1 = d.textValue()
+            d.setTextValue('')
+            pas = pas1.encode('utf-8')          # байты, байты
+            bo  = BytesIO()
+            res = 0
+            with open(path,'rb') as bi:
+                try: tfe.DecryptBuffer(bi,bo,pas)
+                except ValueError:
+                    res = 1
+                except:
+                    res = 2
+                    print('неясная ошибочка')
+                    traceback.print_exc()
+            #bi.close()
+            if res == 0:
+                print('расшифровалось, ага')
+                bo.seek(0,0)
+                b = bo.read()
+                try:
+                    s = b.decode('utf-8')           # КОДИРОВОЧКА
+                except:
+                    res = self.openError('not text')
+                    if res == QMessageBox.Yes:
+                        try: s = b.decode('ascii')
+                        except: return INTERNAL_ERROR
+                    else:
+                        return
+                self.text.setPlainText(s)
+                self.fileOpened('.tfe',path,pas)
+                return OK
+            elif res == 1:
+                d.setLabelText('Неверный пароль. Введите пароль:')
+                continue
+            else:
+                return INTERNAL_ERROR
+    
+    def save_to_gpg(self,path):
+        # раскомментить после добавления ассиметричного шифрования
+        sym == '-c'
+        # sym = MDialogGPGSym.getSym(self)
+        if sym == '-c':
+            if not self.FILE_OPENED:
+                d = QInputDialog(self)
+                d.resize(300,d.height())
+                d.setTextEchoMode(QLineEdit.Password)
+                d.setWindowTitle('Пароль')
+                d.setLabelText('Введите пароль:')
+                while True:
+                    # ввод пароля
+                    if not d.exec_(): return
+                    pas1 = d.textValue()
+                    if len(pas1)<4:
+                        d.setLabelText('Слишком короткий пароль. Введите пароль:')
+                        continue
+                    d.setTextValue('')
+                    d.setLabelText('Повторите пароль:')
+                    # повторный ввод пароля
+                    if not d.exec(): return
+                    pas2 = d.textValue()
+                    # проверка пароля
+                    if pas1!=pas2:
+                        d.setLabelText('Пароли не совпадают. Введите пароль:')
+                    else:
+                        break
+                    d.setTextValue('')
+                #pas = pas1.encode('utf-8')         # пароль в байтах
+                pas = pas1
+            else:
+                pas = self.FILE_PASSPHRASE
             s = self.text.toPlainText()
             b = s.encode('utf-8')               # КОДИРОВОЧКА
             #bi = BytesIO(b)
@@ -326,14 +393,14 @@ class Main(QMainWindow):
                 print(p.terminate())
             except: res = 1
             print(res)
-            #bo.close()
             if res == 0:
-                ... # эмит save_ok
-                return
+                self.fileOpened('.gpg',path,pas)
+                return OK
             else:
-                ... # msgbox save_error ???
-                return
+                return INTERNAL_ERROR
         elif sym == '-e':
+            # TODO
+            #if not self.FILE_OPENED:
             d = QInputDialog(self)
             d.resize(300,d.height())
             d.setTextEchoMode(QLineEdit.Normal)
@@ -357,18 +424,60 @@ class Main(QMainWindow):
             except: res = 1
             #bo.close()
             if res == 0:
-                ... # эмит save_ok
-                return
+                # TODO
+                #self.fileOpened('.gpg',path,pas)
+                return OK
             else:
-                ... # msgbox save_error ???
-                return
+                return INTERNAL_ERROR
     
     def open_from_gpg(self,path):
         # ['gpg','--no-use-agent','--batch','--yes','-d',path] # symmetric
         # ['gpg','--no-use-agent','--batch','--yes ????????????
         ...
-
-
+    
+    # ---------- NOTIFIERS ----------
+    
+    def saveOk(self):
+        self.statusBar().showMessage('Сохранено',1500)
+    
+    def saveError(self,er):
+        if er == INTERNAL_ERROR:
+            QMessageBox.critical(
+                self, "Ошибка при сохранении",
+                "Internal exception has occured while saving file"
+            )
+    
+    def openOk(self):
+        self.statusBar().showMessage('Открыто',1500) #?
+        self.updateWindowTitle()
+    
+    def openError(self,er):
+        if er == INTERNAL_ERROR:
+            QMessageBox.critical(
+                self, "Ошибка при открытии",
+                "Internal exception has occured while saving file"
+            )
+        elif er == NOT_SUPPORTED:
+            QMessageBox.critical(
+                self, "Ошибка при открытии",
+                "Данный формат не поддерживается",
+            )
+        elif er == NOT_TEXT:
+            # может не понадобится
+            res = QMessageBox.question(
+                self, "Ошибка при открытии",
+                "Расшифрованные данные не являются текстом. "\
+                "Целостность данных не гарантирована. Продолжить?"
+            )
+            return res
+    
+    def fileOpened(self,format,path,pas):
+        self.FILE_FORMAT     = format
+        self.FILE_PATH       = path
+        self.WORK_DIR,self.FILE_NAME = os.path.split(path)
+        self.FILE_PASSPHRASE = pas
+        self.FILE_OPENED     = True
+        self.FILE_SAVED      = True
 
 # ---------- ВИДЖЕТЫ ДЛЯ СОХРАНЕНИЯ ФАЙЛОВ ----------
 
