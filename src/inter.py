@@ -16,7 +16,8 @@ import tfe
 
 OK = 0
 NOT_TEXT = 1
-INTERNAL_ERROR = 2
+NOT_SUPPORTED = 2
+INTERNAL_ERROR = 3
 
 class Main(QMainWindow):
     APP_TITLE = 'Python TFE'
@@ -106,10 +107,10 @@ class Main(QMainWindow):
     
     def initMenubar(self):
         menubar = self.menuBar()
-        file = menubar.addMenu('Файл')
-        edit = menubar.addMenu('Правка')
-        view = menubar.addMenu('Вид')
-        abot = menubar.addMenu('О программе')
+        file  = menubar.addMenu('Файл')
+        edit  = menubar.addMenu('Правка')
+        view  = menubar.addMenu('Вид')
+        #about = menubar.addMenu('О программе')
         
         # file
         newA = QAction('Создать',self)
@@ -144,13 +145,55 @@ class Main(QMainWindow):
         file.addSeparator()
         file.addAction(escA)
         
+        # edit
+        
+        undoA = QAction('Отменить',self)
+        undoA.setShortcut('Ctrl+Z')
+        undoA.triggered.connect(self.text.undo)
+        
+        redoA = QAction('Повторить',self)
+        redoA.setShortcuts(['Ctrl+Y','Ctrl+Shift+Z'])
+        redoA.triggered.connect(self.text.redo)
+        
+        selaA = QAction('Выделить все',self)
+        selaA.setShortcut('Ctrl+A')
+        selaA.triggered.connect(self.text.selectAll)
+        
+        cutA = QAction('Вырезать',self)
+        cutA.setShortcut('Ctrl+X')
+        cutA.triggered.connect(self.text.cut)
+        
+        copyA = QAction('Копировать',self)
+        copyA.setShortcut('Ctrl+C')
+        copyA.triggered.connect(self.text.copy)
+        
+        pasteA = QAction('Вставить',self)
+        pasteA.setShortcut('Ctrl+V')
+        pasteA.triggered.connect(self.text.paste)
+        
+        edit.addAction(undoA)
+        edit.addAction(redoA)
+        edit.addSeparator()
+        edit.addAction(selaA)
+        edit.addAction(cutA)
+        edit.addAction(copyA)
+        edit.addAction(pasteA)
+        
         # view
         wowA = QAction('Перенос слов',self)
         wowA.setStatusTip('Включить/отключить перенос слов')
-        wowA.setShortcut('Cltr+W')
-        wowA.triggered.connect(self.v_triggerwow)
+        wowA.setShortcut('Ctrl+W')
+        wowA.setCheckable(True)
+        wowA.toggled.connect(self.v_triggerwow)
         
         view.addAction(wowA)
+        
+        # about
+        about = QAction('О программе...',self)
+        about.setStatusTip('Краткие сведения о программе')
+        about.triggered.connect(self.a_about)
+        
+        menubar.addAction(about)
     
     def initStatusbar(self):
         statusbar = self.statusBar()
@@ -243,8 +286,23 @@ class Main(QMainWindow):
     def f_esc(self):
         exit() #TODO
     
-    def v_triggerwow(self):
-        ...
+    def v_triggerwow(self,ena):
+        if ena:
+            self.text.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+        else:
+            self.text.setWordWrapMode(QTextOption.NoWrap)
+    
+    def a_about(self):
+        s = \
+        "<h1>PyTFE</h1>"\
+        "<p>Copyright &copy; 2016 Gleb Getmanenko</p>"\
+        "<p>Это приложение позволяет сохранять текст в зашифрованном виде. "\
+        "Текст можно сохранять как в формате приложения, "\
+        "так и с использованием симметричного шифрования с помощью GPG.<p>"\
+        "<a href='https://github.com/MrP4p3r/PyTFE'>Репозиторий на GitHub</a>"
+        
+        QMessageBox.about(self,"О программе",s)
+        
     
     # ---------- EVENT HANDLERS ----------
     
