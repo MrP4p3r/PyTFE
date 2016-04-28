@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 from hashlib import md5
 
@@ -42,6 +43,18 @@ def buildheader(**kwargs):
     if len(header)!=16: raise
     return header
 
+def buildemptyheader(**kwargs):
+    header = b''
+    #file signature
+    header += FILE_SIG
+    flds = [ ('algorithm',1),('hashtype',1),('offset',2),('filesize',8) ]
+    for fld,n in flds:
+        q = kwargs[fld]
+        b = q.to_bytes(n,sys.byteorder)
+        header += b
+    if len(header)!=16: raise
+    return header
+
 def parseheader(header):
     if header[0:4] != FILE_SIG: raise ValueError('Not valid file')
     hdr = []
@@ -57,20 +70,17 @@ def parseheader(header):
     for h in hashtab:
         if hashtab[h]['id']==hashid: hashtype = h
     return algorithm,hashtype,offset,filesize
-    
 
 def readchunk(bi,bls,chunksize):
     res = bi.read(chunksize)
     L = len(res)
     if L == 0: return b'',0
-    if L == chunksize: return res,chunksize//bls
-    else:
+    if L%bls != 0:
         q = (bls - L%bls)%bls
         res = res + b'\x42'*q
-        return res,len(res)//bls
+    return res,len(res)//bls
 
 def EncryptBuffer(bi,bo,blength,pas,alg="FEAL 4",hasht="MD5"):
-    bi.seek(0,0)
     #alg
     _alg   = algtab[alg]
     _bls   = _alg['blocksize']
@@ -84,46 +94,59 @@ def EncryptBuffer(bi,bo,blength,pas,alg="FEAL 4",hasht="MD5"):
     _hashid  = hashtab[hasht]["id"]
     _hashlen = hashtab[hasht]["length"]
     #header
-    chunk,clen = readchunk(bi,_bls,_chs)
-    if clen == 0: del _enc; return
+    bleft = blength
+    chunk,clen = readchunk(bi,_bls,min(_chs,bleft))
+    bleft -= len(chunk)
+    if clen == 0:
+        # no data in buffer
+        header = buildheader(
+            algorithm = _algid,
+            hashtype  = _hashid,
+            offset    = 0,
+            filesize  = 0
+        )
+        bo.write(header)
+        del _enc
+        return
     hash = _hashf( chunk[:HASH_DATA_LENGTH] )
     _offset = HEADER_LENGTH + len(hash) + SALT_LENGTH
-    header = buildheader( algorithm = _algid,
-                          hashtype  = _hashid,
-                          offset    = _offset,
-                          filesize  = blength )
+    header = buildheader(
+        algorithm = _algid,
+        hashtype  = _hashid,
+        offset    = _offset,
+        filesize  = blength
+    )
     #write header and first chunk
-    try:
-        bo.write(header)
-    except:
-        print(repr(header))
-        print(repr(bo))
-        
+    bo.write(header)
     bo.write(hash)
     bo.write(salt)
     echunk = _enc.EncryptChunk(chunk,clen)
     bo.write(echunk)
     #encrypt remaining chunks
-    while True:
-        chunk,clen = readchunk(bi,_bls,_chs)
+    while bleft > 0:
+        chunk,clen = readchunk(bi,_bls,min(_chs,bleft))
+        bleft -= len(chunk)
         if clen == 0: break
         echunk = _enc.EncryptChunk(chunk,clen)
         bo.write(echunk)
     del _enc
+    if bleft > 0:
+        raise Exception('Buffer size specified is greater than actual data')
 
 def DecryptBuffer(bi,bo,pas):
-    bi.seek(0,0)
+    BEG = bi.tell()
     header = bi.read(HEADER_LENGTH)
     alg,hasht,offset,blength = parseheader(header)
+    if blength == 0: return
     #init hash
     _hashf   = hashtab[hasht]["function"]
     _hashid  = hashtab[hasht]["id"]
     _hashlen = hashtab[hasht]["length"]
-    #check hash
-    bi.seek(HEADER_LENGTH,0)
+    #read hash and salt
+    bi.seek(BEG+HEADER_LENGTH,0)
     hashA = bi.read(_hashlen)
     salt  = bi.read(SALT_LENGTH)
-    bi.seek(offset,0)
+    bi.seek(BEG+offset,0)
     #init alg
     _alg = algtab[alg]
     _bls = _alg['blocksize']
@@ -131,17 +154,24 @@ def DecryptBuffer(bi,bo,pas):
     _key = _alg['genkey'](pas,salt)
     _dec = _alg['module'](_key)
     # decr
-    echunk,clen = readchunk(bi,_bls,_chs)
+    bleft = blength + (_bls - blength%_bls)%_bls
+    echunk,clen = readchunk(bi,_bls,min(_chs,bleft))
+    bleft -= len(echunk)
     chunk = _dec.DecryptChunk(echunk,clen)
+    # check hash
     hashD = _hashf( chunk[:HASH_DATA_LENGTH] )
-    if hashA != hashD: raise ValueError('Bad key')
-    bo.write(chunk[:blength]); blength -= _chs
+    if hashA != hashD:
+        raise ValueError('Bad key')
+    bo.write(chunk[:blength])
+    blength -= len(echunk)
     
-    while True:
-        echunk,clen = readchunk(bi,_bls,_chs)
+    while bleft > 0:
+        echunk,clen = readchunk(bi,_bls,min(_chs,bleft))
+        bleft -= len(echunk)
         if clen == 0: break
         chunk = _dec.DecryptChunk(echunk,clen)
-        bo.write(echunk[:blength]); blength -= _chs
+        bo.write(echunk[:blength])
+        blength -= len(echunk)
     del _dec
 
 def isTfeFile(path):
@@ -151,14 +181,12 @@ def isTfeFile(path):
         f.close()
         alg,hasht,offset,blength = parseheader(header)
         if alg in algtab and hasht in hashtab:
-            print('тфу')
             return True
         else:
-            print('не тфу')
             return False
-    except Exception as e:
+    except:
         print('ошибочка')
-        print(e)
+        traceback.print_exc()
         return False
 
 
