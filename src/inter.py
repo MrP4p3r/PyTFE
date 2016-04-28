@@ -217,7 +217,7 @@ class Main(QMainWindow):
             self.WORK_DIR,
             self.FILE_FORMATS
         )
-        if path is None: return
+        if not path: return
         
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
@@ -234,6 +234,7 @@ class Main(QMainWindow):
         elif res == NOT_SUPPORTED:
             self.openError(res)
         
+        self.updateWindowTitle()
         return
     
     def f_save(self):
@@ -339,20 +340,20 @@ class Main(QMainWindow):
             pas = pas1.encode('utf-8')          # пароль в байтах
         else:
             pas = self.FILE_PASSPHRASE
-        print(pas)
         s = self.text.toPlainText()
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
-        with open(path,'wb') as bo:
+        tpath = path+'~'
+        with open(tpath,'wb') as bo:
             res = 0
             try: tfe.EncryptBuffer(bi,bo,len(b),pas)
-            except: res = 1
-        print(res)
+            except: res = 1; traceback.print_exc()
         if res == 0:
+            os.replace(tpath,path)
             self.fileOpened('.tfe',path,pas)
             return OK
         else:
-            os.remove(path) # MAY CAUSE PROBLEMS
+            os.remove(tpath) # MAY CAUSE PROBLEMS
             return INTERNAL_ERROR
     
     def open_from_tfe(self,path):
@@ -386,10 +387,13 @@ class Main(QMainWindow):
                 try:
                     s = b.decode('utf-8')           # КОДИРОВОЧКА
                 except:
-                    res = self.openError('not text')
+                    traceback.print_exc()
+                    res = self.openError(NOT_TEXT)
                     if res == QMessageBox.Yes:
                         try: s = b.decode('ascii')
-                        except: return INTERNAL_ERROR
+                        except:
+                            traceback.print_exc();
+                            return INTERNAL_ERROR
                     else:
                         return
                 self.text.setPlainText(s)
@@ -449,7 +453,7 @@ class Main(QMainWindow):
                 )
                 print(p.communicate(b))
                 print(p.terminate())
-            except: res = 1
+            except: res = 1; traceback.print_exc()
             print(res)
             if res == 0:
                 self.fileOpened('.gpg',path,pas)
@@ -479,7 +483,7 @@ class Main(QMainWindow):
                 )
                 p.communicate(b)
                 p.terminate()
-            except: res = 1
+            except: res = 1; traceback.print_exc()
             #bo.close()
             if res == 0:
                 # TODO
@@ -502,7 +506,7 @@ class Main(QMainWindow):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
                 self, "Ошибка при сохранении",
-                "Internal exception has occured while saving file"
+                "Сработало внутреннее исключение при сохранении файла"
             )
     
     def openOk(self):
@@ -513,7 +517,7 @@ class Main(QMainWindow):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
                 self, "Ошибка при открытии",
-                "Internal exception has occured while saving file"
+                "Сработало внутреннее исключение при открытии файла"
             )
         elif er == NOT_SUPPORTED:
             QMessageBox.critical(
