@@ -48,7 +48,9 @@ class Main(QMainWindow):
         
         self.initUI()
         
-        #if os.path.isfile(sys.argv[1])
+        if len(sys.argv)>1:
+            if os.path.isfile(sys.argv[1]):
+                self.openArgFile(sys.argv[1])
     
     def locres(self,fname):
         return os.path.join(self.PATH,fname)
@@ -321,12 +323,20 @@ class Main(QMainWindow):
     
     # ---------- OTHER FUNCTIONS ----------
     
+    def openArgFile(self,path):
+        res = self.openFile(path)
+        if res or res is None:
+            exit()
+    
     def openFile(self,path):
         #TODO
+        ext = None
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
         
-        if ext == '.tfe':
+        if ext is None:
+            res = NOT_SUPPORTED
+        elif ext == '.tfe':
             res = self.open_from_tfe(path)
         elif ext == '.gpg':
             res = self.open_from_gpg(path)
@@ -337,6 +347,8 @@ class Main(QMainWindow):
             self.openError(res)
         elif res == NOT_SUPPORTED:
             self.openError(res)
+        
+        return res
     
     def save_to_tfe(self,path):
         if not self.FILE_OPENED:
@@ -409,7 +421,7 @@ class Main(QMainWindow):
                 bo.seek(0,0)
                 b = bo.read()
                 try:
-                    s = b.decode('utf-8')           # КОДИРОВОЧКА
+                    s = b.decode('utf-8','replace')           # КОДИРОВОЧКА
                 except:
                     traceback.print_exc()
                     res = self.openError(NOT_TEXT)
@@ -546,7 +558,7 @@ class Main(QMainWindow):
         elif er == NOT_SUPPORTED:
             QMessageBox.critical(
                 self, "Ошибка при открытии",
-                "Данный формат не поддерживается",
+                "Данный формат не поддерживается или файл поврежден"
             )
         elif er == NOT_TEXT:
             # может не понадобится
