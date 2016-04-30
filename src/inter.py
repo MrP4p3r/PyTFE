@@ -74,6 +74,7 @@ class Main(QMainWindow):
         self.setCentralWidget(self.text)
         self.initMenubar()
         self.initStatusbar()
+        self.initDragNDrop()
     
     def updateWindowTitle(self):
         new_title = ''
@@ -203,6 +204,12 @@ class Main(QMainWindow):
             QLabel { padding: 0 0 }
         """)
     
+    def initDragNDrop(self):
+        self.setAcceptDrops(True)
+        self.text.setAcceptDrops(True)
+        self.text.dragEnterEvent = self.dragEnterEvent
+        self.text.dropEvent = self.dropEvent
+    
     # ---------- MENU FUNCTIONS ----------
     
     def f_new(self):
@@ -219,20 +226,7 @@ class Main(QMainWindow):
         )
         if not path: return
         
-        _ext = os.path.splitext(path)[1]
-        if _ext in self._FILE_FORMATS: ext = _ext
-        
-        if ext == '.tfe':
-            res = self.open_from_tfe(path)
-        elif ext == '.gpg':
-            res = self.open_from_gpg(path)
-        
-        if res == OK:
-            self.openOk()
-        elif res == INTERNAL_ERROR:
-            self.openError(res)
-        elif res == NOT_SUPPORTED:
-            self.openError(res)
+        self.openFile(path)
         
         self.updateWindowTitle()
         return
@@ -303,7 +297,6 @@ class Main(QMainWindow):
         "<a href='https://github.com/MrP4p3r/PyTFE'>Репозиторий на GitHub</a>"
         
         QMessageBox.about(self,"О программе",s)
-        
     
     # ---------- EVENT HANDLERS ----------
     
@@ -312,7 +305,38 @@ class Main(QMainWindow):
             self.FILE_SAVED = False
             self.updateWindowTitle()
     
+    def dragEnterEvent(self,event):
+        mime = event.mimeData()
+        if mime.hasUrls():
+            urls = mime.urls()
+            if len(urls) == 1 and urls[0].toLocalFile():
+                event.acceptProposedAction()
+    
+    def dropEvent(self,event):
+        mime = event.mimeData()
+        if mime.hasUrls():
+            urls = mime.urls()
+            print(urls[0].toLocalFile())
+            self.openFile(urls[0].toLocalFile())
+    
     # ---------- OTHER FUNCTIONS ----------
+    
+    def openFile(self,path):
+        #TODO
+        _ext = os.path.splitext(path)[1]
+        if _ext in self._FILE_FORMATS: ext = _ext
+        
+        if ext == '.tfe':
+            res = self.open_from_tfe(path)
+        elif ext == '.gpg':
+            res = self.open_from_gpg(path)
+        
+        if res == OK:
+            self.openOk()
+        elif res == INTERNAL_ERROR:
+            self.openError(res)
+        elif res == NOT_SUPPORTED:
+            self.openError(res)
     
     def save_to_tfe(self,path):
         if not self.FILE_OPENED:
