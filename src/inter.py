@@ -19,6 +19,21 @@ NOT_TEXT = 1
 NOT_SUPPORTED = 2
 INTERNAL_ERROR = 3
 
+class MPlainTextEdit(QPlainTextEdit):
+    def wheelEvent(self,event): 
+        deg = event.angleDelta() / 8
+        steps = deg / 15
+        modif = event.modifiers()
+        if modif == Qt.ControlModifier:
+            event.accept()
+            if steps.y() > 0:  self.zoomIn()
+            else:              self.zoomOut()
+            return
+        else:
+            event.accept()
+            super().wheelEvent(event)
+            return
+
 class Main(QMainWindow):
     APP_TITLE = 'Python TFE'
     WORK_DIR  = '.'
@@ -86,7 +101,7 @@ class Main(QMainWindow):
         self.setWindowTitle(new_title)
     
     def initText(self):
-        self.text = QPlainTextEdit()
+        self.text = MPlainTextEdit()
         
         self.text.textChanged.connect(self.textChangedHandler)
         
