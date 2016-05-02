@@ -6,7 +6,8 @@ from hashlib import md5
 
 from pbkdf2 import PBKDF2 as pbkdf2
 
-from feal4 import feal4
+from feal4      import feal4
+from blowfish   import blowfish
 
 algtab = {
     "FEAL 4": {
@@ -15,6 +16,13 @@ algtab = {
         "blocksize" : 8,
         "chunksize" : 8*8*1024, # 64K
         "id"        : 1,
+    },
+    "DES": {
+        "module"    : blowfish,
+        "genkey"    : lambda pas,salt: pbkdf2(pas,salt).read(24),
+        "blocksize" : 8,
+        "chunksize" : 8*8*1024, # 64K
+        "id"        : 2,
     },
 }
 
