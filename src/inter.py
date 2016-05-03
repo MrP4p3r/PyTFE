@@ -260,9 +260,11 @@ class Main(QMainWindow):
             elif res == INTERNAL_ERROR:
                 self.saveError(res)
             self.updateWindowTitle()
+            return res
         else:
             # СОХРАНИТЬ КАК
-            self.f_save_as()
+            res = self.f_save_as()
+            return res
         
     
     def f_save_as(self):
@@ -293,10 +295,10 @@ class Main(QMainWindow):
         elif res == INTERNAL_ERROR:
             self.saveError(res)
         self.updateWindowTitle()
-        return
+        return res
     
     def f_esc(self):
-        exit() #TODO
+        self.close()
     
     def v_triggerwow(self,ena):
         if ena:
@@ -335,6 +337,23 @@ class Main(QMainWindow):
             urls = mime.urls()
             print(urls[0].toLocalFile())
             self.openFile(urls[0].toLocalFile())
+    
+    def closeEvent(self,event):
+        if not self.text.toPlainText().strip() and self.FILE_PATH is None:
+            event.accept()
+        elif self.FILE_SAVED:
+            event.accept()
+        else:
+            res = self.saveFileQuestion()
+            if res == QMessageBox.Yes:
+                if self.f_save() == OK:
+                    event.accept()
+                else:
+                    event.ignore()
+            elif res == QMessageBox.No:
+                event.accept()
+            else:
+                event.ignore()
     
     # ---------- OTHER FUNCTIONS ----------
     
@@ -583,6 +602,14 @@ class Main(QMainWindow):
                 "Целостность данных не гарантирована. Продолжить?"
             )
             return res
+    
+    def saveFileQuestion(self):
+        res = QMessageBox.question(
+            self, "Файл не сохранен",
+            "Файл не сохранен. Сохранить?",
+            buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+        )
+        return res
     
     def fileOpened(self,format,path,pas):
         self.FILE_FORMAT     = format
