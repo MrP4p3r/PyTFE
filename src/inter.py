@@ -416,7 +416,7 @@ class Main(QMainWindow):
         tpath = path+'~'
         with open(tpath,'wb') as bo:
             res = 0
-            try: tfe.EncryptBuffer(bi,bo,len(b),pas,alg="DES",hasht="MD5")
+            try: tfe.EncryptBuffer(bi,bo,len(b),pas,alg="Blowfish",hasht="MD5")
             except: res = 1; traceback.print_exc()
         if res == 0:
             os.replace(tpath,path)

@@ -17,7 +17,7 @@ algtab = {
         "chunksize" : 8*8*1024, # 64K
         "id"        : 1,
     },
-    "DES": {
+    "Blowfish": {
         "module"    : blowfish,
         "genkey"    : lambda pas,salt: pbkdf2(pas,salt).read(24),
         "blocksize" : 8,
