@@ -17,15 +17,18 @@ typedef struct {
     uint32_t S[4][256];
 } KEY;
 
-void __stdcall __declspec(dllexport) EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY *key);
-void __stdcall __declspec(dllexport) DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY *key);
+void __stdcall __declspec(dllexport)
+    EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
+void __stdcall __declspec(dllexport)
+    DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
 KEY* __stdcall __declspec(dllexport) gen_key192( uint8_t* skey );
+KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey , KEY* key );
 
 void encrypt( uint8_t* data , KEY* key );
 void decrypt( uint8_t* data , KEY* key );
 uint32_t F( uint32_t R, KEY* key );
 
-void __stdcall EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY *key)
+void __stdcall EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
 {
     uint8_t* data = (uint8_t*)malloc(8);
     for ( uint32_t i = 0; i < nblocks; i++ )
@@ -36,7 +39,7 @@ void __stdcall EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY *key)
     }
 }
 
-void __stdcall DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY *key)
+void __stdcall DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
 {
     uint8_t* data = (uint8_t*)malloc(8);
     for ( uint32_t i = 0; i < nblocks; i++ )
@@ -108,8 +111,14 @@ uint32_t F(uint32_t R, KEY* key)
 
 KEY* __stdcall gen_key192( uint8_t* skey )
 {
-    /* Function generates P keys and S tables from a 192 bit secret key */
     KEY* key = (KEY*)malloc(sizeof(KEY));
+    _gen_key192(skey,key);
+    return key;
+}
+
+KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey , KEY* key )
+{
+    /* Function generates P keys and S tables from a 192 bit secret key */
     uint32_t* skey32 = (uint32_t*)skey;
     
     // Initialize P and S
@@ -127,16 +136,16 @@ KEY* __stdcall gen_key192( uint8_t* skey )
     for ( int i = 0; i < 18; i+=2 )
     {
         encrypt(data,key);
-        key->P[i] = data32[i%2];
-        key->P[i+1] = data32[i%2+1];
+        key->P[i] = data32[0];
+        key->P[i+1] = data32[1];
     }
     for ( int i = 0; i < 4; i++ )
     {
         for ( int j = 0; j < 256; j+=2 )
         {
             encrypt(data,key);
-            key->S[i][j] = data32[j%2];
-            key->S[i][j+1] = data32[j%2+1];
+            key->S[i][j] = data32[0];
+            key->S[i][j+1] = data32[1];
         }
     }
     
