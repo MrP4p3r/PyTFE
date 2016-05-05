@@ -18,35 +18,30 @@ typedef struct {
 } KEY;
 
 void __stdcall __declspec(dllexport)
-    EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
+    _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
 void __stdcall __declspec(dllexport)
-    DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
-KEY* __stdcall __declspec(dllexport) gen_key192( uint8_t* skey );
-KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey , KEY* key );
+    _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
+KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey );
+KEY* __stdcall __declspec(dllexport) __gen_key192( uint8_t* skey , KEY* key );
 
 void encrypt( uint8_t* data , KEY* key );
 void decrypt( uint8_t* data , KEY* key );
 uint32_t F( uint32_t R, KEY* key );
 
-void __stdcall EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
+void __stdcall _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
 {
-    uint8_t* data = (uint8_t*)malloc(8);
     for ( uint32_t i = 0; i < nblocks; i++ )
     {
-        memcpy(data,&chunkptr[i*8],8);
-        encrypt(data,key);
-        memcpy(&chunkptr[i*8],data,8);
+        encrypt(&chunkptr[i*8],key);
     }
 }
 
-void __stdcall DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
+void __stdcall _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
 {
     uint8_t* data = (uint8_t*)malloc(8);
     for ( uint32_t i = 0; i < nblocks; i++ )
     {
-        memcpy(data,&chunkptr[i*8],8);
-        decrypt(data,key);
-        memcpy(&chunkptr[i*8],data,8);
+        decrypt(&chunkptr[i*8],key);
     }
 }
 
@@ -109,14 +104,14 @@ uint32_t F(uint32_t R, KEY* key)
     return q[0];
 }
 
-KEY* __stdcall gen_key192( uint8_t* skey )
+KEY* __stdcall _gen_key192( uint8_t* skey )
 {
     KEY* key = (KEY*)malloc(sizeof(KEY));
-    _gen_key192(skey,key);
+    __gen_key192(skey,key);
     return key;
 }
 
-KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey , KEY* key )
+KEY* __stdcall __declspec(dllexport) __gen_key192( uint8_t* skey , KEY* key )
 {
     /* Function generates P keys and S tables from a 192 bit secret key */
     uint32_t* skey32 = (uint32_t*)skey;

@@ -1,10 +1,11 @@
-blowfish.c compilation was executed with Digital Mars C compiler (dmc):
+blowfish.c compilation was executed with gcc:
 
-    dmc -o+all -WD blowfish.c kernel32.lib
+    gcc -std=c99 -O3 -c blowfish.c
+    gcc -s -shared -o seeblowfish.dll blowfish.o -Wl,--out-implib,libblowfish.a,--subsystem,windows
 
 blowfish.asm compilation was executed with Flat Assembler (fasm):
 
-    fasm blowfish.asm
+    fasm blowfish.asm asmblowfish.dll
 
 testbf.py measures speed of chunk encryption/decryption functions of
 libraries produced by C and ASM code: seeblowfish.dll and asmblowfish.dll
