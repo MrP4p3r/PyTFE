@@ -35,11 +35,8 @@ class blowfish:
         self.dll.Decrypt( _data , self.key )
         return _data.raw[:-1]
     def EncryptChunk(self,chunk,clen):
-        print(1)
         _chunk = create_string_buffer(chunk)
-        print(2)
         _clen  = c_ulong(clen)
-        print(3)
         self.dll.EncryptChunk( _chunk, _clen , self.key )
         return _chunk.raw[:-1]
     def DecryptChunk(self,chunk,clen):
