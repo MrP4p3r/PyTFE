@@ -2,7 +2,7 @@ from os.path import abspath,dirname,realpath,join
 from ctypes import *
 
 class feal4:
-    key = b''
+    key = None
     keylength = 8
     blocksize = 8
     def __init__(self,key=None):
@@ -10,9 +10,8 @@ class feal4:
             raise TypeError('Key must be bytes')
         if len(key) < self.keylength:
             raise ValueError('Key size must be at least %i bytes'%self.keylength)
-        self.key = key[:self.keylength]
-        self._key = create_string_buffer(self.key)
-        # иногда случайно выдает WinError 487
+        
+        self.key = create_string_buffer(key)
         self.dll = WinDLL( join(dirname(realpath(__file__)),'feal4.dll'))
     def __del__(self):
         try:
@@ -23,21 +22,21 @@ class feal4:
             pass
     def Encrypt(self,data):
         _data = create_string_buffer(data)
-        _res  = create_string_buffer(self.blocksize)
-        self.dll.Encrypt( byref(_data) , byref(self._key) , byref(_res) )
+        self.dll.Encrypt(_data,self.key)
+        return _data.raw[:-1]
     def Decrypt(self,data):
         _data = create_string_buffer(data)
-        _res  = create_string_buffer(self.blocksize)
-        self.dll.Decrypt( byref(_data) , byref(self._key) , byref(_res) )
+        self.dll.Decrypt(_data,self.key)
+        return _data.raw[:-1]
     def EncryptChunk(self,chunk,clen):
         _chunk = create_string_buffer(chunk)
         _clen  = c_ulong(clen)
-        self.dll.EncryptChunk( byref(_chunk), _clen , byref(self._key) )
+        self.dll.EncryptChunk(_chunk,_clen,self.key)
         return _chunk.raw[:-1]
     def DecryptChunk(self,chunk,clen):
         _chunk = create_string_buffer(chunk)
         _clen  = c_ulong(clen)
-        self.dll.DecryptChunk( byref(_chunk), _clen , byref(self._key) )
+        self.dll.DecryptChunk(_chunk,_clen,self.key)
         return _chunk.raw[:-1]
     
 if __name__=='__main__':

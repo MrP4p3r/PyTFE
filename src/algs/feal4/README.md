@@ -1,5 +1,1 @@
-Compile with:
-
-    fasm feal4.asm
-
-:D
+FEAL4 implementation in C and x86 ASM
