@@ -3,7 +3,7 @@
 
 import sys
 import os
-from inter import Main
+from mdls.inter import Main
 
 def main():
     path = os.path.dirname(os.path.realpath(__file__))

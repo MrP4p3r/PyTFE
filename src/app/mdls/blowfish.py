@@ -13,7 +13,9 @@ class blowfish:
         if len(skey) < self.skeylength:
             raise ValueError('Key size must be at least %i bytes'%self.skeylength)
         
-        self.dll = WinDLL( join(dirname(realpath(__file__)),'blowfish.dll'))
+        self.dll = WinDLL(
+            join(dirname(realpath(__file__)),'win32','blowfish.dll')
+        )
         self.skey = create_string_buffer(skey)
         self.key  = create_string_buffer(self.keylength)
         

@@ -1,0 +1,15 @@
+HEADER:
+    file sig 4 B:
+        b'tfe\x42'
+    algorithm 1 B:
+        FEAL4       - \x01
+        BLOWFISH    - \x02
+    hash 1 B:
+        MD5         - \x01
+    offset 2 B
+    file size 8 B
+PREAMBULA:
+    hash(data[:512])
+    passphrase salt 16 B
+DATA:
+    encrypted data

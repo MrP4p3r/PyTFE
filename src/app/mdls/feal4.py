@@ -1,5 +1,6 @@
 from os.path import abspath,dirname,realpath,join
 from ctypes import *
+import sys
 
 class feal4:
     key = None
@@ -12,7 +13,9 @@ class feal4:
             raise ValueError('Key size must be at least %i bytes'%self.keylength)
         
         self.key = create_string_buffer(key)
-        self.dll = WinDLL( join(dirname(realpath(__file__)),'feal4.dll'))
+        self.dll = WinDLL(
+            join( dirname(realpath(__file__)), 'win32', 'feal4.dll' )
+        )
     def __del__(self):
         try:
             libHandle = self.dll._handle

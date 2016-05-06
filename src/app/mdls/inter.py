@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui     import *
 from PyQt5.QtCore    import *
 
-import tfe
+from . import tfe
 
 OK = 0
 NOT_TEXT = 1
