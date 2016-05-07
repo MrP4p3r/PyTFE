@@ -13,30 +13,9 @@ from PyQt5.QtGui     import *
 from PyQt5.QtCore    import *
 
 from . import tfe
-
-OK = 0
-NOT_TEXT = 1
-NOT_SUPPORTED = 2
-INTERNAL_ERROR = 3
-
-def mbool(val):
-    if isinstance(val,bool): return val
-    elif isinstance(val,str): return val.lower() == 'true'
-
-class MPlainTextEdit(QPlainTextEdit):
-    def wheelEvent(self,event): 
-        deg = event.angleDelta() / 8
-        steps = deg / 15
-        modif = event.modifiers()
-        if modif == Qt.ControlModifier:
-            event.accept()
-            if steps.y() > 0:  self.zoomIn()
-            else:              self.zoomOut()
-            return
-        else:
-            event.accept()
-            super().wheelEvent(event)
-            return
+from .defaultvalues   import *
+from .commonfunctions import *
+from .mwidgets        import *
 
 class Main(QMainWindow):
     APP_TITLE = 'Python TFE'
@@ -67,8 +46,8 @@ class Main(QMainWindow):
             self.WORK_DIR = os.path.expanduser('~')
         
         self.stt = QSettings(self.locres('config.ini'),QSettings.IniFormat)
-        self.readSettings()
         self.initUI()
+        self.loadSettings()
         
         if len(sys.argv)>1:
             if os.path.isfile(sys.argv[1]):
@@ -77,27 +56,47 @@ class Main(QMainWindow):
     def locres(self,fname):
         return os.path.join(self.PATH,fname)
     
-    def readSettings(self):
-        self.DEFAULT_ALGO = self.stt.value('app/default_algo','Blowfish')
-        self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo',True))
-    
     def saveSettings(self):
         self.stt.setValue('window/geometry',self.geometry())
         
+        #p = self.text.palette()
+        #f = self.text.font()
+        
+        #self.stt.beginGroup('text')
+        #self.stt.setValue('base',p.color(QPalette.Base).name())
+        #self.stt.setValue('text',p.color(QPalette.Text).name())
+        #self.stt.setValue('highlight',p.color(QPalette.Highlight).name())
+        #self.stt.setValue('highlighttext',p.color(QPalette.HighlightedText).name())
+        #self.stt.setValue('fontfamily',f.family())
+        #self.stt.setValue('fontsize',f.pointSize())
+        #self.stt.endGroup()
+        
+        #self.stt.setValue('app/default_algo',self.DEFAULT_ALGO)
+        #self.stt.setValue('app/use_default_algo',self.USE_DEFAULT_ALGO)
+    
+    def loadSettings(self):
+        self.DEFAULT_ALGO = self.stt.value('app/default_algo','Blowfish')
+        self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo',True))
+        
         p = self.text.palette()
         f = self.text.font()
-        self.stt.beginGroup('text')
-        self.stt.setValue('base',p.color(QPalette.Base).name())
-        self.stt.setValue('text',p.color(QPalette.Text).name())
-        self.stt.setValue('highlight',p.color(QPalette.Highlight).name())
-        self.stt.setValue('highlight',p.color(QPalette.HighlightedText).name())
-        self.stt.setValue('fontfamily',f.family())
-        self.stt.setValue('fontsize',f.pointSize())
-        self.stt.endGroup()
         
-        self.stt.setValue('app/default_algo',self.DEFAULT_ALGO)
-        self.stt.setValue('app/use_default_algo',self.USE_DEFAULT_ALGO)
+        col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
+        col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
+        col3 = self.stt.value('text/highlight',DEFAULT_TEXT_HIGHLIGHT_C)
+        col4 = self.stt.value('text/highlighttext',DEFAULT_TEXT_HIGHLIGHTTEXT_C)
+        p.setColor(QPalette.Base,QColor(col1))
+        p.setColor(QPalette.Text,QColor(col2))
+        p.setColor(QPalette.Highlight,QColor(col3))
+        p.setColor(QPalette.HighlightedText,QColor(col4))
         
+        ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
+        fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
+        f.setFamily(ff)
+        f.setPointSize(fs)
+        
+        self.text.setPalette(p)
+        self.text.setFont(f)
     
     def initUI(self):
         # window
@@ -137,20 +136,17 @@ class Main(QMainWindow):
         p = self.text.palette()
         f = QFont()
         
-        col1 = self.stt.value('text/base','#fdf6e3')
-        col2 = self.stt.value('text/text','#586e75')
-        col3 = self.stt.value('text/highligh','#586e75')
-        col4 = self.stt.value('text/highlightext','#fdf6e3')
+        col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
+        col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
+        col3 = self.stt.value('text/highligh',DEFAULT_TEXT_HIGHLIGHT_C)
+        col4 = self.stt.value('text/highlightext',DEFAULT_TEXT_HIGHLIGHTTEXT_C)
         p.setColor(QPalette.Base,QColor(col1))
         p.setColor(QPalette.Text,QColor(col2))
         p.setColor(QPalette.Highlight,QColor(col3))
         p.setColor(QPalette.HighlightedText,QColor(col4))
         
-        # line number color : #93a1a1
-        # line number background color : #eee8d5
-        
-        ff = self.stt.value('text/fontfamily','Courier New')
-        fs = int(self.stt.value('text/fontsize',10))
+        ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
+        fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
         f.setFamily(ff)
         f.setPointSize(fs)
         
@@ -185,6 +181,10 @@ class Main(QMainWindow):
         sasA.setShortcut('Ctrl+Shift+S')
         sasA.triggered.connect(self.f_save_as)
         
+        sttA = QAction('Настройки',self)
+        sttA.setStatusTip('Основные настройки программы')
+        sttA.triggered.connect(self.f_settings)
+        
         escA = QAction('Выход',self)
         escA.setStatusTip('Выход')
         escA.setShortcuts(['Alt+F4','Esc'])
@@ -194,6 +194,8 @@ class Main(QMainWindow):
         file.addAction(opeA)
         file.addAction(savA)
         file.addAction(sasA)
+        file.addSeparator()
+        file.addAction(sttA)
         file.addSeparator()
         file.addAction(escA)
         
@@ -330,6 +332,10 @@ class Main(QMainWindow):
             self.saveError(res)
         self.updateWindowTitle()
         return res
+    
+    def f_settings(self):
+        q = MSettingsWindow(self.stt,self).exec()
+        self.loadSettings()
     
     def f_esc(self):
         self.close()
