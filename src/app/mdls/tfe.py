@@ -186,17 +186,28 @@ def isTfeFile(path):
     f = open(path,'rb')
     try:
         header = f.read(HEADER_LENGTH)
-        f.close()
         alg,hasht,offset,blength = parseheader(header)
         if alg in algtab and hasht in hashtab:
             return True
         else:
             return False
-    except:
-        print('ошибочка')
+    except Exception as e:
         traceback.print_exc()
-        return False
+        #raise e
+    finally:
+        f.close()
 
+def whatAlgoIn(path):
+    f = open(path,'rb')
+    try:
+        header = f.read(HEADER_LENGTH)
+        alg,hasht,offset,blength = parseheader(header)
+        return alg
+    except:
+        traceback.print_exc()
+        #raise e
+    finally:
+        f.close()
 
 # ---------- ФУНКЦИИ ДЛЯ ФАЙЛОВ ----------
 
