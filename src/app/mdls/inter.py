@@ -19,6 +19,10 @@ NOT_TEXT = 1
 NOT_SUPPORTED = 2
 INTERNAL_ERROR = 3
 
+def mbool(val):
+    if isinstance(val,bool): return val
+    elif isinstance(val,str): return val.lower() == 'true'
+
 class MPlainTextEdit(QPlainTextEdit):
     def wheelEvent(self,event): 
         deg = event.angleDelta() / 8
@@ -49,6 +53,7 @@ class Main(QMainWindow):
     FILE_PATH = None
     FILE_NAME = 'Untitled'
     FILE_PASSPHRASE = None
+    FILE_ALGO = None
     FILE_OPENED = False
     FILE_SAVED = True
     
@@ -61,6 +66,8 @@ class Main(QMainWindow):
         if not os.path.isdir(self.WORK_DIR):
             self.WORK_DIR = os.path.expanduser('~')
         
+        self.stt = QSettings(self.locres('config.ini'),QSettings.IniFormat)
+        self.readSettings()
         self.initUI()
         
         if len(sys.argv)>1:
@@ -70,17 +77,38 @@ class Main(QMainWindow):
     def locres(self,fname):
         return os.path.join(self.PATH,fname)
     
+    def readSettings(self):
+        self.DEFAULT_ALGO = self.stt.value('app/default_algo','Blowfish')
+        self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo',True))
+    
+    def saveSettings(self):
+        self.stt.setValue('window/geometry',self.geometry())
+        
+        p = self.text.palette()
+        f = self.text.font()
+        self.stt.beginGroup('text')
+        self.stt.setValue('base',p.color(QPalette.Base).name())
+        self.stt.setValue('text',p.color(QPalette.Text).name())
+        self.stt.setValue('highlight',p.color(QPalette.Highlight).name())
+        self.stt.setValue('highlight',p.color(QPalette.HighlightedText).name())
+        self.stt.setValue('fontfamily',f.family())
+        self.stt.setValue('fontsize',f.pointSize())
+        self.stt.endGroup()
+        
+        self.stt.setValue('app/default_algo',self.DEFAULT_ALGO)
+        self.stt.setValue('app/use_default_algo',self.USE_DEFAULT_ALGO)
+        
+    
     def initUI(self):
         # window
-        self.setGeometry(0,0,800,600)
-        self.setGeometry(
-            QStyle.alignedRect(
-                Qt.LeftToRight,
-                Qt.AlignCenter,
-                self.size(),
-                self.app.desktop().availableGeometry()
-            )
+        default_geom = QStyle.alignedRect(
+            Qt.LeftToRight,
+            Qt.AlignCenter,
+            QSize(640,480),
+            self.app.desktop().availableGeometry()
         )
+        geom = self.stt.value('window/geometry',default_geom)
+        self.setGeometry(geom)
         self.updateWindowTitle()
         self.app_icon = QIcon()
         self.app_icon.addFile(self.locres('icon.png'), QSize(256,256))
@@ -109,16 +137,22 @@ class Main(QMainWindow):
         p = self.text.palette()
         f = QFont()
         
-        p.setColor(QPalette.Base,QColor('#fdf6e3'))
-        p.setColor(QPalette.Text,QColor('#586e75'))
-        p.setColor(QPalette.Highlight,QColor('#586e75'))
-        p.setColor(QPalette.HighlightedText,QColor('#fdf6e3'))
+        col1 = self.stt.value('text/base','#fdf6e3')
+        col2 = self.stt.value('text/text','#586e75')
+        col3 = self.stt.value('text/highligh','#586e75')
+        col4 = self.stt.value('text/highlightext','#fdf6e3')
+        p.setColor(QPalette.Base,QColor(col1))
+        p.setColor(QPalette.Text,QColor(col2))
+        p.setColor(QPalette.Highlight,QColor(col3))
+        p.setColor(QPalette.HighlightedText,QColor(col4))
         
         # line number color : #93a1a1
         # line number background color : #eee8d5
         
-        f.setFamily('Courier New')
-        f.setPointSize(10)
+        ff = self.stt.value('text/fontfamily','Courier New')
+        fs = int(self.stt.value('text/fontsize',10))
+        f.setFamily(ff)
+        f.setPointSize(fs)
         
         self.text.setPalette(p)
         self.text.setFont(f)
@@ -335,7 +369,6 @@ class Main(QMainWindow):
         mime = event.mimeData()
         if mime.hasUrls():
             urls = mime.urls()
-            print(urls[0].toLocalFile())
             self.openFile(urls[0].toLocalFile())
     
     def closeEvent(self,event):
@@ -354,6 +387,11 @@ class Main(QMainWindow):
                 event.accept()
             else:
                 event.ignore()
+        if event.isAccepted():
+            self.exitRoutines()
+    
+    def exitRoutines(self):
+        self.saveSettings()
     
     # ---------- OTHER FUNCTIONS ----------
     
@@ -404,23 +442,29 @@ class Main(QMainWindow):
                 if not d.exec(): return
                 pas2 = d.textValue()
                 # проверка пароля
-                if pas1!=pas2: d.setLabelText('Пароли не совпадают. Введите пароль:')
-                else: break
+                if pas1!=pas2:
+                    d.setLabelText('Пароли не совпадают. Введите пароль:')
+                else:
+                    break
                 d.setTextValue('')
             pas = pas1.encode('utf-8')          # пароль в байтах
+            alg = self.DEFAULT_ALGO
         else:
             pas = self.FILE_PASSPHRASE
+            alg = self.FILE_ALGO if not self.USE_DEFAULT_ALGO \
+                  else self.DEFAULT_ALGO
+        
         s = self.text.toPlainText()
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
         tpath = path+'~'
         with open(tpath,'wb') as bo:
             res = 0
-            try: tfe.EncryptBuffer(bi,bo,len(b),pas,alg="Blowfish",hasht="MD5")
+            try: tfe.EncryptBuffer(bi,bo,len(b),pas,alg=alg,hasht="MD5")
             except: res = 1; traceback.print_exc()
         if res == 0:
             os.replace(tpath,path)
-            self.fileOpened('.tfe',path,pas)
+            self.fileOpened('.tfe',path,pas,alg)
             return OK
         else:
             os.remove(tpath) # MAY CAUSE PROBLEMS
@@ -429,6 +473,7 @@ class Main(QMainWindow):
     def open_from_tfe(self,path):
         if not tfe.isTfeFile(path):
             return NOT_SUPPORTED
+        alg = tfe.whatAlgoIn(path)
         d = QInputDialog(self)
         d.resize(300,d.height())
         d.setTextEchoMode(QLineEdit.Password)
@@ -451,7 +496,6 @@ class Main(QMainWindow):
                     traceback.print_exc()
             #bi.close()
             if res == 0:
-                print('расшифровалось, ага')
                 bo.seek(0,0)
                 b = bo.read()
                 try:
@@ -467,7 +511,7 @@ class Main(QMainWindow):
                     else:
                         return
                 self.text.setPlainText(s)
-                self.fileOpened('.tfe',path,pas)
+                self.fileOpened('.tfe',path,pas,alg)
                 return OK
             elif res == 1:
                 d.setLabelText('Неверный пароль. Введите пароль:')
@@ -524,9 +568,8 @@ class Main(QMainWindow):
                 print(p.communicate(b))
                 print(p.terminate())
             except: res = 1; traceback.print_exc()
-            print(res)
             if res == 0:
-                self.fileOpened('.gpg',path,pas)
+                self.fileOpened('.gpg',path,pas,None)
                 return OK
             else:
                 return INTERNAL_ERROR
@@ -611,11 +654,12 @@ class Main(QMainWindow):
         )
         return res
     
-    def fileOpened(self,format,path,pas):
+    def fileOpened(self,format,path,pas,alg):
         self.FILE_FORMAT     = format
         self.FILE_PATH       = path
         self.WORK_DIR,self.FILE_NAME = os.path.split(path)
         self.FILE_PASSPHRASE = pas
+        self.FILE_ALGO       = alg
         self.FILE_OPENED     = True
         self.FILE_SAVED      = True
 
