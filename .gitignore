@@ -17,9 +17,10 @@
 *.tar
 *.zip
 
-# Logs and databases #
+# Logs and configs #
 ######################
 *.log
+*.ini
 
 # OS generated files #
 ######################
