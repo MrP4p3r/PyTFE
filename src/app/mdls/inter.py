@@ -18,14 +18,13 @@ from .commonfunctions import *
 from .mwidgets        import *
 
 class Main(QMainWindow):
-    APP_TITLE = 'Python TFE'
+    APP_TITLE = 'PyTFE'
     WORK_DIR  = '.'
     PATH      = None
-    FILE_FORMATS = """
-        Формат TFE (*.tfe);;
-        Формат GPG (*.gpg)
-    """
-    _FILE_FORMATS = ['.tfe','.gpg']
+    FILE_FORMATS = {"TFE (*.tfe)": '.tfe'}
+    _FILE_FORMATS = {'.tfe'}
+    EXPORT_FILE_FORMATS = {"Symmetric GPG (*.gpg)": '.gpg'}
+    _EXPORT_FILE_FORMATS = {'.gpg'}
     
     # параметры открытого файла
     FILE_FORMAT = None
@@ -181,6 +180,11 @@ class Main(QMainWindow):
         sasA.setShortcut('Ctrl+Shift+S')
         sasA.triggered.connect(self.f_save_as)
         
+        expA = QAction('Экспорт',self)
+        expA.setStatusTip('Экспорт во внешний формат')
+        expA.setShortcut('Ctrl+Shift+E')
+        expA.triggered.connect(self.f_export)
+        
         sttA = QAction('Настройки',self)
         sttA.setStatusTip('Основные настройки программы')
         sttA.triggered.connect(self.f_settings)
@@ -194,6 +198,7 @@ class Main(QMainWindow):
         file.addAction(opeA)
         file.addAction(savA)
         file.addAction(sasA)
+        file.addAction(expA)
         file.addSeparator()
         file.addAction(sttA)
         file.addSeparator()
@@ -287,10 +292,9 @@ class Main(QMainWindow):
     def f_save(self):
         if self.FILE_OPENED:
             # СОХРАНИТЬ ФАЙЛ С ТЕКУЩИМИ ОПЦИЯМИ
+            res = None
             if self.FILE_FORMAT == '.tfe':
                 res = self.save_to_tfe(self.FILE_PATH)
-            elif self.FILE_FORMAT == '.gpg':
-                res = self.save_to_gpg(self.FILE_PATH)
             if res == OK:
                 self.saveOk()
             elif res == INTERNAL_ERROR:
@@ -311,25 +315,57 @@ class Main(QMainWindow):
         else:
             suggested_name = self.FILE_PATH
         path,ext = QFileDialog.getSaveFileName(
-            self,
-            'Сохранить файл',
+            self,'Сохранить файл',
             suggested_name,
-            self.FILE_FORMATS
+            ";;".join(self.FILE_FORMATS)
         )
         if not path: return
         
+        ext = self.FILE_FORMATS[ext]
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
         
+        res = None
         if ext == '.tfe':
             res = self.save_to_tfe(path)
-        elif ext == '.gpg':
-            res = self.save_to_gpg(path)
         
         if res == OK:
             self.saveOk()
         elif res == INTERNAL_ERROR:
             self.saveError(res)
+        self.updateWindowTitle()
+        return res
+    
+    def f_export(self):
+        if self.FILE_PATH is None:
+            suggested_name = os.path.join(self.WORK_DIR,self.FILE_NAME)
+        else:
+            suggested_name = os.path.splitext(self.FILE_PATH)[0]
+        print('da')
+        print('suggested name',suggested_name)
+        path,ext = QFileDialog.getSaveFileName(
+            self,'Экспорт',
+            suggested_name,
+            ";;".join(self.EXPORT_FILE_FORMATS)
+        )
+        print(path,ext)
+        if not path: return
+        
+        print(path,ext)
+        ext = self.EXPORT_FILE_FORMATS[ext]
+        _ext = os.path.splitext(path)[1]
+        if _ext in self._EXPORT_FILE_FORMATS: ext = _ext
+        
+        res = None
+        if ext == '.gpg':
+            res = self.export_to_gpg(path)
+        
+        if res == OK:
+            self.exportOk()
+        elif res == NOT_AVAILABLE:
+            self.exportError(res)
+        elif res == INTERNAL_ERROR:
+            self.exportError(res)
         self.updateWindowTitle()
         return res
     
@@ -416,8 +452,6 @@ class Main(QMainWindow):
             res = NOT_SUPPORTED
         elif ext == '.tfe':
             res = self.open_from_tfe(path)
-        elif ext == '.gpg':
-            res = self.open_from_gpg(path)
         
         if res == OK:
             self.openOk()
@@ -430,10 +464,7 @@ class Main(QMainWindow):
     
     def save_to_tfe(self,path):
         if not self.FILE_OPENED:
-            d = QInputDialog(self)
-            d.resize(300,d.height())
-            d.setTextEchoMode(QLineEdit.Password)
-            d.setWindowTitle('Пароль')
+            d = self.passwordInput()
             d.setLabelText('Введите пароль:')
             while True:
                 # ввод пароля
@@ -480,10 +511,7 @@ class Main(QMainWindow):
         if not tfe.isTfeFile(path):
             return NOT_SUPPORTED
         alg = tfe.whatAlgoIn(path)
-        d = QInputDialog(self)
-        d.resize(300,d.height())
-        d.setTextEchoMode(QLineEdit.Password)
-        d.setWindowTitle('Пароль')
+        d = self.passwordInput()
         d.setLabelText('Введите пароль:')
         while True:
             if not d.exec(): return
@@ -525,44 +553,40 @@ class Main(QMainWindow):
             else:
                 return INTERNAL_ERROR
     
-    def save_to_gpg(self,path):
+    def export_to_gpg(self,path):
+        if os.system('gpg --version'): return NOT_AVAILABLE
+        sym = '-c'
         # раскомментить после добавления ассиметричного шифрования
-        sym == '-c'
         # sym = MDialogGPGSym.getSym(self)
         if sym == '-c':
-            if not self.FILE_OPENED:
-                d = QInputDialog(self)
-                d.resize(300,d.height())
-                d.setTextEchoMode(QLineEdit.Password)
-                d.setWindowTitle('Пароль')
-                d.setLabelText('Введите пароль:')
-                while True:
-                    # ввод пароля
-                    if not d.exec_(): return
-                    pas1 = d.textValue()
-                    if len(pas1)<4:
-                        d.setLabelText('Слишком короткий пароль. Введите пароль:')
-                        continue
-                    d.setTextValue('')
-                    d.setLabelText('Повторите пароль:')
-                    # повторный ввод пароля
-                    if not d.exec(): return
-                    pas2 = d.textValue()
-                    # проверка пароля
-                    if pas1!=pas2:
-                        d.setLabelText('Пароли не совпадают. Введите пароль:')
-                    else:
-                        break
-                    d.setTextValue('')
-                #pas = pas1.encode('utf-8')         # пароль в байтах
-                pas = pas1
-            else:
-                pas = self.FILE_PASSPHRASE
+            d = self.passwordInput()
+            d.setLabelText('Введите пароль:')
+            while True:
+                # ввод пароля
+                if not d.exec_(): return
+                pas1 = d.textValue()
+                d.setTextValue('')
+                d.setLabelText('Повторите пароль:')
+                # повторный ввод пароля
+                if not d.exec(): return
+                pas2 = d.textValue()
+                # проверка пароля
+                if pas1!=pas2:
+                    d.setLabelText('Пароли не совпадают. Введите пароль:')
+                else:
+                    break
+                d.setTextValue('')
+            #pas = pas1.encode('utf-8')         # пароль в байтах
+            pas = pas1
             s = self.text.toPlainText()
             b = s.encode('utf-8')               # КОДИРОВОЧКА
             #bi = BytesIO(b)
             #bo = open(path,'wb')
             res = 0
+            print([
+                        'gpg','-c','--no-use-agent','--passphrase',pas,
+                        '--batch','--yes','-o',path
+                    ])
             try:
                 p = subprocess.Popen(
                     [
@@ -575,7 +599,6 @@ class Main(QMainWindow):
                 print(p.terminate())
             except: res = 1; traceback.print_exc()
             if res == 0:
-                self.fileOpened('.gpg',path,pas,None)
                 return OK
             else:
                 return INTERNAL_ERROR
@@ -606,7 +629,6 @@ class Main(QMainWindow):
             #bo.close()
             if res == 0:
                 # TODO
-                #self.fileOpened('.gpg',path,pas)
                 return OK
             else:
                 return INTERNAL_ERROR
@@ -652,6 +674,22 @@ class Main(QMainWindow):
             )
             return res
     
+    def exportOk(self):
+        self.statusBar().showMessage('Сохранено',1500)
+    
+    def exportError(self,er):
+        if er == INTERNAL_ERROR:
+            QMessageBox.critical(
+                self, "Ошибка при экспорте",
+                "Сработало внутреннее исключение при экспорте"
+            )
+        elif er == NOT_AVAILABLE:
+            QMessageBox.critical(
+                self, "Ошибка при экспорте"
+                "Экспорт в данном формате не доступен."
+            )
+    
+    
     def saveFileQuestion(self):
         res = QMessageBox.question(
             self, "Файл не сохранен",
@@ -659,6 +697,13 @@ class Main(QMainWindow):
             buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
         )
         return res
+    
+    def passwordInput(self):
+        d = QInputDialog(self)
+        d.resize(300,d.height())
+        d.setTextEchoMode(QLineEdit.Password)
+        d.setWindowTitle('Пароль')
+        return d
     
     def fileOpened(self,format,path,pas,alg):
         self.FILE_FORMAT     = format
