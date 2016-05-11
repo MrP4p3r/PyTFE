@@ -1,5 +1,6 @@
-# Compiled source #
+# Compiled source and executables #
 ###################
+*.bat
 *.com
 *.class
 *.o
