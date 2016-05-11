@@ -7,7 +7,7 @@ from .defaultvalues   import *
 from .commonfunctions import *
 
 class MPlainTextEdit(QPlainTextEdit):
-    def wheelEvent(self,event): 
+    def wheelEvent(self,event):
         deg = event.angleDelta() / 8
         steps = deg / 15
         modif = event.modifiers()
@@ -22,6 +22,7 @@ class MPlainTextEdit(QPlainTextEdit):
             return
 
 class MComboBox(QWidget):
+    i1 = True
     def __init__(self,lbl,lst,dval,*args):
         super().__init__(*args)
         self.setLayout(QGridLayout())
@@ -30,12 +31,21 @@ class MComboBox(QWidget):
         self.a.setText(lbl)
         self.a.setFixedWidth(150)
         self.b = QComboBox()
-        for i in lst: self.b.addItem(i)
+        if len(lst) > 0:
+            if len(lst[0]) == 2:
+                self.i1 = False
+                for i,j in lst: self.b.addItem(i,j)
+            else:
+                self.i1 = True
+                for i in lst: self.b.addItem(i)
         self.b.setCurrentText(dval)
         self.layout().addWidget(self.a,1,1)
         self.layout().addWidget(self.b,1,2)
     def getval(self):
-        return self.b.currentText()
+        if self.i1:
+            return self.b.currentText()
+        else:
+            return self.b.currentData()
 
 class MCheckBox(QCheckBox):
     def __init__(self,lbl,dval,*args):
@@ -67,7 +77,7 @@ class MColorBox(QWidget):
     def newcolor(self):
         col = QColorDialog.getColor(
             QColor(self.b.text()),
-            self, 'Выберете цвет'
+            self, self.tr('Select color')
         )
         if col.isValid():
             self.b.setText(col.name())
@@ -112,7 +122,7 @@ class MSettingsWindow(QDialog):
     def initUI(self):
         self.setFixedWidth(420)
         self.setFixedHeight(315)
-        self.setWindowTitle('Настройки')
+        self.setWindowTitle(self.tr('Settings and preferences'))
         self.setLayout(QGridLayout())
         tabs = QTabWidget()
         self.buttons = QDialogButtonBox(
@@ -128,12 +138,12 @@ class MSettingsWindow(QDialog):
         lo = QVBoxLayout()
         APP.setLayout(lo)
         a = MComboBox(
-            'Алгоритм по умолчанию',
+            self.tr('Default algorithm'),
             [ x for x in tfe.algtab ],
             self.stt.value('app/default_algo',DEFAULT_APP_DEFAULT_ALGO)
         )
         b = MCheckBox(
-            'Использовать алгоритм по умолчанию при пересохранении',
+            self.tr('Always save file using default algorithm'),
             mbool(self.stt.value('app/use_default_algo',
                                  DEFAULT_APP_USE_DEFAULT_ALGO))
         )
@@ -147,37 +157,49 @@ class MSettingsWindow(QDialog):
         EDT = QWidget()
         lo = QVBoxLayout()
         EDT.setLayout(lo)
+        l = MComboBox(
+            self.tr('Language'),
+            [
+                ( QLocale.languageToString(QLocale.Russian), QLocale.Russian ),
+                ( QLocale.languageToString(QLocale.English), QLocale.English )
+            ],
+            QLocale.languageToString(
+                int(self.stt.value('locale/locale',QLocale.English))
+            )
+        )
         c = MColorBox(
-            'Цвет фона',
+            self.tr('Background color'),
             self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
         )
         d = MColorBox(
-            'Цвет текста',
+            self.tr('Text color'),
             self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
         )
         e = MColorBox(
-            'Цвет выделения',
+            self.tr('Selection color'),
             self.stt.value('text/highlight',DEFAULT_TEXT_HIGHLIGHT_C)
         )
         f = MColorBox(
-            'Цвет выделенного текста',
+            self.tr('Selected text color'),
             self.stt.value('text/highlighttext',DEFAULT_TEXT_HIGHLIGHTTEXT_C)
         )
         g = MFontBox(
-            'Шрифт',
+            self.tr('Font'),
             (
                 self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY),
                 int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
             )
         )
+        lo.addWidget(l)
         lo.addWidget(c)
         lo.addWidget(d)
         lo.addWidget(e)
         lo.addWidget(f)
         lo.addWidget(g)
         lo.addStretch()
-        tabs.addTab(APP,'Приложение')
-        tabs.addTab(EDT,'Редактор')
+        tabs.addTab(APP,self.tr('Application'))
+        tabs.addTab(EDT,self.tr('Editor'))
+        self.opts['locale/locale'] = l
         self.opts['text/base'] = c
         self.opts['text/text'] = d
         self.opts['text/highlight'] = e
@@ -206,10 +228,11 @@ class MSettingsWindow(QDialog):
         a,b = self.opts['text/font(family,size)'].getval()
         self.stt.setValue('text/fontfamily',a)
         self.stt.setValue('text/fontsize',b)
+        self.stt.setValue('locale/locale',self.opts['locale/locale'].getval())
     def resetSettings(self):
         res = QMessageBox.question(
-            self,'Настройки',
-            'Вы собираетесь сбросить все настройки. Продолжить?',
+            self,self.tr('Restore Defaults'),
+            self.tr('You are going to reset settings to defaults. Continue?'),
             buttons = QMessageBox.Yes | QMessageBox.No
         )
         if res == QMessageBox.Yes:
@@ -229,3 +252,5 @@ class MSettingsWindow(QDialog):
                               DEFAULT_TEXT_FONTFAMILY)
             self.stt.setValue('text/fontsize',
                               DEFAULT_TEXT_FONTSIZE)
+            self.stt.setValue('locale/locale',
+                              QLocale.English)

@@ -25,7 +25,7 @@ class Main(QMainWindow):
     _FILE_FORMATS = {'.tfe'}
     EXPORT_FILE_FORMATS = {"Symmetric GPG (*.gpg)": '.gpg'}
     _EXPORT_FILE_FORMATS = {'.gpg'}
-    
+
     # параметры открытого файла
     FILE_FORMAT = None
     FILE_PATH = None
@@ -34,33 +34,36 @@ class Main(QMainWindow):
     FILE_ALGO = None
     FILE_OPENED = False
     FILE_SAVED = True
-    
+
     def __init__(self,path,*args):
         self.app = QApplication(sys.argv)
+        self.app.setApplicationName(self.APP_TITLE)
         super().__init__(*args)
-        
+
         self.PATH = path
+
         self.WORK_DIR = os.path.join(os.path.expanduser('~'),'Desktop')
         if not os.path.isdir(self.WORK_DIR):
             self.WORK_DIR = os.path.expanduser('~')
-        
+
         self.stt = QSettings(self.locres('config.ini'),QSettings.IniFormat)
+        self.loadTranslator()
         self.initUI()
         self.loadSettings()
-        
+
         if len(sys.argv)>1:
             if os.path.isfile(sys.argv[1]):
                 self.openArgFile(sys.argv[1])
-    
+
     def locres(self,fname):
         return os.path.join(self.PATH,fname)
-    
+
     def saveSettings(self):
         self.stt.setValue('window/geometry',self.geometry())
-        
+
         #p = self.text.palette()
         #f = self.text.font()
-        
+
         #self.stt.beginGroup('text')
         #self.stt.setValue('base',p.color(QPalette.Base).name())
         #self.stt.setValue('text',p.color(QPalette.Text).name())
@@ -69,17 +72,17 @@ class Main(QMainWindow):
         #self.stt.setValue('fontfamily',f.family())
         #self.stt.setValue('fontsize',f.pointSize())
         #self.stt.endGroup()
-        
+
         #self.stt.setValue('app/default_algo',self.DEFAULT_ALGO)
         #self.stt.setValue('app/use_default_algo',self.USE_DEFAULT_ALGO)
-    
+
     def loadSettings(self):
         self.DEFAULT_ALGO = self.stt.value('app/default_algo','Blowfish')
         self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo',True))
-        
+
         p = self.text.palette()
         f = self.text.font()
-        
+
         col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
         col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
         col3 = self.stt.value('text/highlight',DEFAULT_TEXT_HIGHLIGHT_C)
@@ -88,15 +91,71 @@ class Main(QMainWindow):
         p.setColor(QPalette.Text,QColor(col2))
         p.setColor(QPalette.Highlight,QColor(col3))
         p.setColor(QPalette.HighlightedText,QColor(col4))
-        
+
         ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
         fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
         f.setFamily(ff)
         f.setPointSize(fs)
-        
+
         self.text.setPalette(p)
         self.text.setFont(f)
-    
+
+    def loadTranslator(self):
+        try:
+            self.app.removeTranslator(self.translator_app)
+        except:
+            pass
+        try:
+            self.app.removeTranslator(self.translator_qt)
+        except:
+            pass
+
+        self.translator_app = QTranslator()
+        self.translator_qt  = QTranslator()
+
+        self.locale = QLocale(
+            int(self.stt.value('locale/locale',QLocale.English))
+        )
+
+        q = self.translator_app.load(
+            self.locale, 'tr', '_', self.locres('tr'), '.qm'
+        )
+        if q: self.app.installTranslator(self.translator_app)
+
+        q = self.translator_qt.load(
+            self.locale, 'qt', '_', self.locres('tr'), '.qm'
+        )
+        if q: self.app.installTranslator(self.translator_qt)
+
+    def updateLanguage(self):
+        self.A['file'].setTitle(self.tr('File'))
+        self.A['edit'].setTitle(self.tr('Edit'))
+        self.A['view'].setTitle(self.tr('View'))
+        self.A['about'].setText(self.tr('About...'))
+        self.A['newA'].setText(self.tr('New file'))
+        self.A['opeA'].setText(self.tr('Open'))
+        self.A['savA'].setText(self.tr('Save'))
+        self.A['sasA'].setText(self.tr('Save As...'))
+        self.A['expA'].setText(self.tr('Export'))
+        self.A['sttA'].setText(self.tr('Preferences'))
+        self.A['escA'].setText(self.tr('Application'))
+        self.A['undoA'].setText(self.tr('Undo'))
+        self.A['redoA'].setText(self.tr('Redo'))
+        self.A['selaA'].setText(self.tr('Select All'))
+        self.A['cutA'].setText(self.tr('Cut'))
+        self.A['copyA'].setText(self.tr('Copy'))
+        self.A['pasteA'].setText(self.tr('Paste'))
+        self.A['wowA'].setText(self.tr('Word Wrap'))
+
+        self.A['newA'].setStatusTip(self.tr('New file'))
+        self.A['opeA'].setStatusTip(self.tr('Open an existing file'))
+        self.A['savA'].setStatusTip(self.tr('Save file'))
+        self.A['sasA'].setStatusTip(self.tr('Save file as...'))
+        self.A['expA'].setStatusTip(self.tr('Save file in external format'))
+        self.A['sttA'].setStatusTip(self.tr('Application settings and preferences'))
+        self.A['escA'].setStatusTip(self.tr('Close the application'))
+        self.A['wowA'].setStatusTip(self.tr('Enable/disable word wrapping'))
+
     def initUI(self):
         # window
         default_geom = QStyle.alignedRect(
@@ -111,30 +170,30 @@ class Main(QMainWindow):
         self.app_icon = QIcon()
         self.app_icon.addFile(self.locres('icon.png'), QSize(256,256))
         self.setWindowIcon(self.app_icon)
-        
+
         # widgets
         self.initText() # creates self.text
         self.setCentralWidget(self.text)
         self.initMenubar()
         self.initStatusbar()
         self.initDragNDrop()
-    
+
     def updateWindowTitle(self):
         new_title = ''
         if not self.FILE_SAVED: new_title += '* '
         new_title += self.FILE_NAME
         new_title += ' - ' + self.APP_TITLE
         self.setWindowTitle(new_title)
-    
+
     def initText(self):
         self.text = MPlainTextEdit()
-        
+
         self.text.textChanged.connect(self.textChangedHandler)
-        
+
         self.text.setFrameStyle(QFrame.NoFrame)
         p = self.text.palette()
         f = QFont()
-        
+
         col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
         col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
         col3 = self.stt.value('text/highligh',DEFAULT_TEXT_HIGHLIGHT_C)
@@ -143,117 +202,118 @@ class Main(QMainWindow):
         p.setColor(QPalette.Text,QColor(col2))
         p.setColor(QPalette.Highlight,QColor(col3))
         p.setColor(QPalette.HighlightedText,QColor(col4))
-        
+
         ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
         fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
         f.setFamily(ff)
         f.setPointSize(fs)
-        
+
         self.text.setPalette(p)
         self.text.setFont(f)
-    
+
     def initMenubar(self):
+        self.A = dict()
+
         menubar = self.menuBar()
-        file  = menubar.addMenu('Файл')
-        edit  = menubar.addMenu('Правка')
-        view  = menubar.addMenu('Вид')
+        self.A['file']  = menubar.addMenu(self.tr('File'))
+        self.A['edit']  = menubar.addMenu(self.tr('Edit'))
+        self.A['view']  = menubar.addMenu(self.tr('View'))
         #about = menubar.addMenu('О программе')
-        
+
         # file
-        newA = QAction('Создать',self)
-        newA.setStatusTip('Создать новый файл')
-        newA.setShortcut('Ctrl+N')
-        newA.triggered.connect(self.f_new)
-        
-        opeA = QAction('Открыть',self)
-        opeA.setStatusTip('Открыть существующий файл')
-        opeA.setShortcut('Ctrl+O')
-        opeA.triggered.connect(self.f_open)
-        
-        savA = QAction('Сохранить',self)
-        savA.setStatusTip('Сохранить файл')
-        savA.setShortcut('Ctrl+S')
-        savA.triggered.connect(self.f_save)
-        
-        sasA = QAction('Сохранить как...',self)
-        sasA.setStatusTip('Сохранить файл с другими настройками')
-        sasA.setShortcut('Ctrl+Shift+S')
-        sasA.triggered.connect(self.f_save_as)
-        
-        expA = QAction('Экспорт',self)
-        expA.setStatusTip('Экспорт во внешний формат')
-        expA.setShortcut('Ctrl+Shift+E')
-        expA.triggered.connect(self.f_export)
-        
-        sttA = QAction('Настройки',self)
-        sttA.setStatusTip('Основные настройки программы')
-        sttA.triggered.connect(self.f_settings)
-        
-        escA = QAction('Выход',self)
-        escA.setStatusTip('Выход')
-        escA.setShortcuts(['Alt+F4','Esc'])
-        escA.triggered.connect(self.f_esc)
-        
-        file.addAction(newA)
-        file.addAction(opeA)
-        file.addAction(savA)
-        file.addAction(sasA)
-        file.addAction(expA)
-        file.addSeparator()
-        file.addAction(sttA)
-        file.addSeparator()
-        file.addAction(escA)
-        
+        self.A['newA'] = QAction(self.tr('New'),self)
+        self.A['newA'].setStatusTip(self.tr('New file'))
+        self.A['newA'].setShortcut('Ctrl+N')
+        self.A['newA'].triggered.connect(self.f_new)
+
+        self.A['opeA'] = QAction(self.tr('Open'),self)
+        self.A['opeA'].setStatusTip(self.tr('Open an existing file'))
+        self.A['opeA'].setShortcut('Ctrl+O')
+        self.A['opeA'].triggered.connect(self.f_open)
+
+        self.A['savA'] = QAction(self.tr('Save'),self)
+        self.A['savA'].setStatusTip(self.tr('Save file'))
+        self.A['savA'].setShortcut('Ctrl+S')
+        self.A['savA'].triggered.connect(self.f_save)
+
+        self.A['sasA'] = QAction(self.tr('Save As...'),self)
+        self.A['sasA'].setStatusTip(self.tr('Save file as...'))
+        self.A['sasA'].setShortcut('Ctrl+Shift+S')
+        self.A['sasA'].triggered.connect(self.f_save_as)
+
+        self.A['expA'] = QAction(self.tr('Export'),self)
+        self.A['expA'].setStatusTip(self.tr('Save file in external format'))
+        self.A['expA'].setShortcut('Ctrl+Shift+E')
+        self.A['expA'].triggered.connect(self.f_export)
+
+        self.A['sttA'] = QAction(self.tr('Preferences'),self)
+        self.A['sttA'].setStatusTip(self.tr('Application settings and preferences'))
+        self.A['sttA'].triggered.connect(self.f_settings)
+
+        self.A['escA'] = QAction(self.tr('Exit'),self)
+        self.A['escA'].setStatusTip(self.tr('Close the application'))
+        self.A['escA'].setShortcuts(['Alt+F4','Esc'])
+        self.A['escA'].triggered.connect(self.f_esc)
+
+        self.A['file'].addAction(self.A['newA'])
+        self.A['file'].addAction(self.A['opeA'])
+        self.A['file'].addAction(self.A['savA'])
+        self.A['file'].addAction(self.A['sasA'])
+        self.A['file'].addAction(self.A['expA'])
+        self.A['file'].addSeparator()
+        self.A['file'].addAction(self.A['sttA'])
+        self.A['file'].addSeparator()
+        self.A['file'].addAction(self.A['escA'])
+
         # edit
-        
-        undoA = QAction('Отменить',self)
-        undoA.setShortcut('Ctrl+Z')
-        undoA.triggered.connect(self.text.undo)
-        
-        redoA = QAction('Повторить',self)
-        redoA.setShortcuts(['Ctrl+Y','Ctrl+Shift+Z'])
-        redoA.triggered.connect(self.text.redo)
-        
-        selaA = QAction('Выделить все',self)
-        selaA.setShortcut('Ctrl+A')
-        selaA.triggered.connect(self.text.selectAll)
-        
-        cutA = QAction('Вырезать',self)
-        cutA.setShortcut('Ctrl+X')
-        cutA.triggered.connect(self.text.cut)
-        
-        copyA = QAction('Копировать',self)
-        copyA.setShortcut('Ctrl+C')
-        copyA.triggered.connect(self.text.copy)
-        
-        pasteA = QAction('Вставить',self)
-        pasteA.setShortcut('Ctrl+V')
-        pasteA.triggered.connect(self.text.paste)
-        
-        edit.addAction(undoA)
-        edit.addAction(redoA)
-        edit.addSeparator()
-        edit.addAction(selaA)
-        edit.addAction(cutA)
-        edit.addAction(copyA)
-        edit.addAction(pasteA)
-        
+
+        self.A['undoA'] = QAction(self.tr('Undo'),self)
+        self.A['undoA'].setShortcut('Ctrl+Z')
+        self.A['undoA'].triggered.connect(self.text.undo)
+
+        self.A['redoA'] = QAction(self.tr('Redo'),self)
+        self.A['redoA'].setShortcuts(['Ctrl+Y','Ctrl+Shift+Z'])
+        self.A['redoA'].triggered.connect(self.text.redo)
+
+        self.A['selaA'] = QAction(self.tr('Select All'),self)
+        self.A['selaA'].setShortcut('Ctrl+A')
+        self.A['selaA'].triggered.connect(self.text.selectAll)
+
+        self.A['cutA'] = QAction(self.tr('Cut'),self)
+        self.A['cutA'].setShortcut('Ctrl+X')
+        self.A['cutA'].triggered.connect(self.text.cut)
+
+        self.A['copyA'] = QAction(self.tr('Copy'),self)
+        self.A['copyA'].setShortcut('Ctrl+C')
+        self.A['copyA'].triggered.connect(self.text.copy)
+
+        self.A['pasteA'] = QAction(self.tr('Paste'),self)
+        self.A['pasteA'].setShortcut('Ctrl+V')
+        self.A['pasteA'].triggered.connect(self.text.paste)
+
+        self.A['edit'].addAction(self.A['undoA'])
+        self.A['edit'].addAction(self.A['redoA'])
+        self.A['edit'].addSeparator()
+        self.A['edit'].addAction(self.A['selaA'])
+        self.A['edit'].addAction(self.A['cutA'])
+        self.A['edit'].addAction(self.A['copyA'])
+        self.A['edit'].addAction(self.A['pasteA'])
+
         # view
-        wowA = QAction('Перенос слов',self)
-        wowA.setStatusTip('Включить/отключить перенос слов')
-        wowA.setShortcut('Ctrl+W')
-        wowA.setCheckable(True)
-        wowA.toggled.connect(self.v_triggerwow)
-        
-        view.addAction(wowA)
-        
+        self.A['wowA'] = QAction(self.tr('Word Wrap'),self)
+        self.A['wowA'].setStatusTip(self.tr('Enable/disable word wrapping'))
+        self.A['wowA'].setShortcut('Ctrl+W')
+        self.A['wowA'].setCheckable(True)
+        self.A['wowA'].toggled.connect(self.v_triggerwow)
+
+        self.A['view'].addAction(self.A['wowA'])
+
         # about
-        about = QAction('О программе...',self)
-        about.setStatusTip('Краткие сведения о программе')
-        about.triggered.connect(self.a_about)
-        
-        menubar.addAction(about)
-    
+        self.A['about'] = QAction(self.tr('About...'),self)
+        self.A['about'].triggered.connect(self.a_about)
+
+        menubar.addAction(self.A['about'])
+
     def initStatusbar(self):
         statusbar = self.statusBar()
         statusbar.setFixedHeight(22)
@@ -261,34 +321,34 @@ class Main(QMainWindow):
             QStatusBar { border-top: 1px solid #d7d7d7; }
             QLabel { padding: 0 0 }
         """)
-    
+
     def initDragNDrop(self):
         self.setAcceptDrops(True)
         self.text.setAcceptDrops(True)
         self.text.dragEnterEvent = self.dragEnterEvent
         self.text.dropEvent = self.dropEvent
-    
+
     # ---------- MENU FUNCTIONS ----------
-    
+
     def f_new(self):
         # ATTENTION!
         subprocess.Popen('python '+sys.argv[0],shell=False)
-    
+
     def f_open(self):
         suggested_name = os.path.join(self.WORK_DIR,'*.*')
         path,ext = QFileDialog.getOpenFileName(
             self,
-            'Открыть файл',
+            self.tr('Open File'),
             self.WORK_DIR,
-            self.FILE_FORMATS
+            ";;".join(self.FILE_FORMATS)
         )
         if not path: return
-        
+
         self.openFile(path)
-        
+
         self.updateWindowTitle()
         return
-    
+
     def f_save(self):
         if self.FILE_OPENED:
             # СОХРАНИТЬ ФАЙЛ С ТЕКУЩИМИ ОПЦИЯМИ
@@ -305,8 +365,8 @@ class Main(QMainWindow):
             # СОХРАНИТЬ КАК
             res = self.f_save_as()
             return res
-        
-    
+
+
     def f_save_as(self):
         # запрос файла у пользователя
         self.FILE_OPENED = False
@@ -315,51 +375,49 @@ class Main(QMainWindow):
         else:
             suggested_name = self.FILE_PATH
         path,ext = QFileDialog.getSaveFileName(
-            self,'Сохранить файл',
+            self,self.tr('Save File'),
             suggested_name,
             ";;".join(self.FILE_FORMATS)
         )
         if not path: return
-        
+
         ext = self.FILE_FORMATS[ext]
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
-        
+
         res = None
         if ext == '.tfe':
             res = self.save_to_tfe(path)
-        
+
         if res == OK:
             self.saveOk()
         elif res == INTERNAL_ERROR:
             self.saveError(res)
         self.updateWindowTitle()
         return res
-    
+
     def f_export(self):
         if self.FILE_PATH is None:
             suggested_name = os.path.join(self.WORK_DIR,self.FILE_NAME)
         else:
             suggested_name = os.path.splitext(self.FILE_PATH)[0]
-        print('da')
-        print('suggested name',suggested_name)
         path,ext = QFileDialog.getSaveFileName(
-            self,'Экспорт',
+            self,self.tr('Export'),
             suggested_name,
             ";;".join(self.EXPORT_FILE_FORMATS)
         )
         print(path,ext)
         if not path: return
-        
+
         print(path,ext)
         ext = self.EXPORT_FILE_FORMATS[ext]
         _ext = os.path.splitext(path)[1]
         if _ext in self._EXPORT_FILE_FORMATS: ext = _ext
-        
+
         res = None
         if ext == '.gpg':
             res = self.export_to_gpg(path)
-        
+
         if res == OK:
             self.exportOk()
         elif res == NOT_AVAILABLE:
@@ -368,51 +426,54 @@ class Main(QMainWindow):
             self.exportError(res)
         self.updateWindowTitle()
         return res
-    
+
     def f_settings(self):
         q = MSettingsWindow(self.stt,self).exec()
         self.loadSettings()
-    
+        self.loadTranslator()
+        self.updateLanguage()
+
     def f_esc(self):
         self.close()
-    
+
     def v_triggerwow(self,ena):
         if ena:
             self.text.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
         else:
             self.text.setWordWrapMode(QTextOption.NoWrap)
-    
+
     def a_about(self):
-        s = \
+        s = self.tr(\
         "<h1>PyTFE</h1>"\
         "<p>Copyright &copy; 2016 Gleb Getmanenko</p>"\
-        "<p>Это приложение позволяет сохранять текст в зашифрованном виде. "\
-        "Текст можно сохранять как в формате приложения, "\
-        "так и с использованием симметричного шифрования с помощью GPG.<p>"\
-        "<a href='https://github.com/MrP4p3r/PyTFE'>Репозиторий на GitHub</a>"
-        
-        QMessageBox.about(self,"О программе",s)
-    
+        "<p>The application allows you to encrypt and save text. "\
+        "Text can be saved as TFE file "\
+        "or be exported into GPG format using symmetric encryption.<p>"\
+        "<a href='https://github.com/MrP4p3r/PyTFE'>GitHub Repository</a>"
+        )
+
+        QMessageBox.about(self,self.APP_TITLE,s)
+
     # ---------- EVENT HANDLERS ----------
-    
+
     def textChangedHandler(self):
         if self.FILE_SAVED:
             self.FILE_SAVED = False
             self.updateWindowTitle()
-    
+
     def dragEnterEvent(self,event):
         mime = event.mimeData()
         if mime.hasUrls():
             urls = mime.urls()
             if len(urls) == 1 and urls[0].toLocalFile():
                 event.acceptProposedAction()
-    
+
     def dropEvent(self,event):
         mime = event.mimeData()
         if mime.hasUrls():
             urls = mime.urls()
             self.openFile(urls[0].toLocalFile())
-    
+
     def closeEvent(self,event):
         if not self.text.toPlainText().strip() and self.FILE_PATH is None:
             event.accept()
@@ -431,56 +492,60 @@ class Main(QMainWindow):
                 event.ignore()
         if event.isAccepted():
             self.exitRoutines()
-    
+
     def exitRoutines(self):
         self.saveSettings()
-    
+
     # ---------- OTHER FUNCTIONS ----------
-    
+
     def openArgFile(self,path):
         res = self.openFile(path)
         if res or res is None:
             exit()
-    
+
     def openFile(self,path):
         #TODO
         ext = None
         _ext = os.path.splitext(path)[1]
         if _ext in self._FILE_FORMATS: ext = _ext
-        
+
         if ext is None:
             res = NOT_SUPPORTED
         elif ext == '.tfe':
             res = self.open_from_tfe(path)
-        
+
         if res == OK:
             self.openOk()
         elif res == INTERNAL_ERROR:
             self.openError(res)
         elif res == NOT_SUPPORTED:
             self.openError(res)
-        
+
         return res
-    
+
     def save_to_tfe(self,path):
         if not self.FILE_OPENED:
             d = self.passwordInput()
-            d.setLabelText('Введите пароль:')
+            d.setLabelText(self.tr('Enter password:'))
             while True:
                 # ввод пароля
                 if not d.exec(): return
                 pas1 = d.textValue()
                 if len(pas1)<4:
-                    d.setLabelText('Слишком короткий пароль. Введите пароль:')
+                    d.setLabelText(
+                        self.tr('Password is too short. Enter password:')
+                    )
                     continue
                 d.setTextValue('')
-                d.setLabelText('Повторите пароль:')
+                d.setLabelText(self.tr('Repeat password:'))
                 # повторный ввод пароля
                 if not d.exec(): return
                 pas2 = d.textValue()
                 # проверка пароля
                 if pas1!=pas2:
-                    d.setLabelText('Пароли не совпадают. Введите пароль:')
+                    d.setLabelText(
+                        self.tr('Passwords do not match. Enter password:')
+                    )
                 else:
                     break
                 d.setTextValue('')
@@ -490,7 +555,7 @@ class Main(QMainWindow):
             pas = self.FILE_PASSPHRASE
             alg = self.FILE_ALGO if not self.USE_DEFAULT_ALGO \
                   else self.DEFAULT_ALGO
-        
+
         s = self.text.toPlainText()
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
@@ -506,13 +571,13 @@ class Main(QMainWindow):
         else:
             os.remove(tpath) # MAY CAUSE PROBLEMS
             return INTERNAL_ERROR
-    
+
     def open_from_tfe(self,path):
         if not tfe.isTfeFile(path):
             return NOT_SUPPORTED
         alg = tfe.whatAlgoIn(path)
         d = self.passwordInput()
-        d.setLabelText('Введите пароль:')
+        d.setLabelText(self.tr('Enter password:'))
         while True:
             if not d.exec(): return
             pas1 = d.textValue()
@@ -526,7 +591,6 @@ class Main(QMainWindow):
                     res = 1
                 except:
                     res = 2
-                    print('неясная ошибочка')
                     traceback.print_exc()
             #bi.close()
             if res == 0:
@@ -548,11 +612,11 @@ class Main(QMainWindow):
                 self.fileOpened('.tfe',path,pas,alg)
                 return OK
             elif res == 1:
-                d.setLabelText('Неверный пароль. Введите пароль:')
+                d.setLabelText(self.tr('Wrong password. Enter password:'))
                 continue
             else:
                 return INTERNAL_ERROR
-    
+
     def export_to_gpg(self,path):
         if os.system('gpg --version'): return NOT_AVAILABLE
         sym = '-c'
@@ -560,19 +624,19 @@ class Main(QMainWindow):
         # sym = MDialogGPGSym.getSym(self)
         if sym == '-c':
             d = self.passwordInput()
-            d.setLabelText('Введите пароль:')
+            d.setLabelText(self.tr('Enter password:'))
             while True:
                 # ввод пароля
                 if not d.exec_(): return
                 pas1 = d.textValue()
                 d.setTextValue('')
-                d.setLabelText('Повторите пароль:')
+                d.setLabelText(self.tr('Repeat password:'))
                 # повторный ввод пароля
                 if not d.exec(): return
                 pas2 = d.textValue()
                 # проверка пароля
                 if pas1!=pas2:
-                    d.setLabelText('Пароли не совпадают. Введите пароль:')
+                    d.setLabelText(self.tr('Passwords do not match. Enter password:'))
                 else:
                     break
                 d.setTextValue('')
@@ -608,8 +672,8 @@ class Main(QMainWindow):
             d = QInputDialog(self)
             d.resize(300,d.height())
             d.setTextEchoMode(QLineEdit.Normal)
-            d.setWindowTitle('Получатель')
-            d.setLabelText('Введите ?????:')
+            d.setWindowTitle(self.tr('Recipient'))
+            d.setLabelText(self.tr('Enter recipient:'))
             # ввод пароля
             if not d.exec(): return
             name = d.textValue()
@@ -632,79 +696,78 @@ class Main(QMainWindow):
                 return OK
             else:
                 return INTERNAL_ERROR
-    
+
     def open_from_gpg(self,path):
         # ['gpg','--no-use-agent','--batch','--yes','-d',path] # symmetric
         # ['gpg','--no-use-agent','--batch','--yes ????????????
         ...
-    
+
     # ---------- NOTIFIERS ----------
-    
+
     def saveOk(self):
-        self.statusBar().showMessage('Сохранено',1500)
-    
+        self.statusBar().showMessage(self.tr('Saved'),1500)
+
     def saveError(self,er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, "Ошибка при сохранении",
-                "Сработало внутреннее исключение при сохранении файла"
+                self, self.tr('Error'),
+                self.tr('Internal exception occurred while saving the file')
             )
-    
+
     def openOk(self):
-        self.statusBar().showMessage('Открыто',1500) #?
+        self.statusBar().showMessage(self.tr('File opened'),1500) #?
         self.updateWindowTitle()
-    
+
     def openError(self,er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, "Ошибка при открытии",
-                "Сработало внутреннее исключение при открытии файла"
+                self, self.tr('Error'),
+                self.tr('Internal exception occurred while opening the file')
             )
         elif er == NOT_SUPPORTED:
             QMessageBox.critical(
-                self, "Ошибка при открытии",
-                "Данный формат не поддерживается или файл поврежден"
+                self, self.tr('Error'),
+                self.tr('This file format is not supported or file is corrupted')
             )
         elif er == NOT_TEXT:
             # может не понадобится
             res = QMessageBox.question(
-                self, "Ошибка при открытии",
-                "Расшифрованные данные не являются текстом. "\
-                "Целостность данных не гарантирована. Продолжить?"
+                self, self.tr('Error'),
+                self.tr('Decrypted data is not text. Continue?')
             )
             return res
-    
+
     def exportOk(self):
-        self.statusBar().showMessage('Сохранено',1500)
-    
+        self.statusBar().showMessage(self.tr('Saved'),1500)
+
     def exportError(self,er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, "Ошибка при экспорте",
-                "Сработало внутреннее исключение при экспорте"
+                self, self.tr('Error'),
+                self.tr('Internal exception occured while exporting the file')
             )
         elif er == NOT_AVAILABLE:
             QMessageBox.critical(
-                self, "Ошибка при экспорте"
-                "Экспорт в данном формате не доступен."
+                self, self.tr('Error'),
+                self.tr('Export to this external format is not available')
             )
-    
-    
+
+
     def saveFileQuestion(self):
         res = QMessageBox.question(
-            self, "Файл не сохранен",
-            "Файл не сохранен. Сохранить?",
+            self, self.tr('File Not Saved'),
+            self.tr('Save changes to %s?')%self.FILE_NAME,
             buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
         )
         return res
-    
+
     def passwordInput(self):
         d = QInputDialog(self)
         d.resize(300,d.height())
         d.setTextEchoMode(QLineEdit.Password)
-        d.setWindowTitle('Пароль')
+        d.setWindowTitle(self.tr('Password'))
         return d
-    
+
     def fileOpened(self,format,path,pas,alg):
         self.FILE_FORMAT     = format
         self.FILE_PATH       = path
@@ -715,16 +778,6 @@ class Main(QMainWindow):
         self.FILE_SAVED      = True
 
 # ---------- ВИДЖЕТЫ ДЛЯ СОХРАНЕНИЯ ФАЙЛОВ ----------
-
-"""
-GPG:
-    Ассимметричное шифрование:
-        Необходимо указать пользователя с ключом
-    Симметричное шифрование:
-        Необходимо ввести пароль
-TFE (только симметричное):
-    Необходимо ввести кодовую фразу
-"""
 
 class MRadioButton(QRadioButton):
     clicked = pyqtSignal(object)
@@ -740,22 +793,22 @@ class MDialogGPGSym(QDialog):
     def __init__(self,*args):
         super().__init__(*args)
         self.setWindowFlags(self.windowFlags()&~Qt.WindowContextHelpButtonHint)
-        self.setWindowTitle('Тип шифрования GPG')
+        self.setWindowTitle(self.tr('GPG'))
         lo = QGridLayout(self)
-        
+
         self.lab = QLabel()
-        self.lab.setText('Выберите тип шифрования:')
-        
+        self.lab.setText(self.tr('Encryption algorithm'))
+
         r_Group = QButtonGroup()
-        r_symm = MRadioButton('Симметричное','-c')
-        r_asym = MRadioButton('Ассиметричное','-e')
+        r_symm = MRadioButton(self.tr('Symmetric'),'-c')
+        r_asym = MRadioButton(self.tr('Asymmetric'),'-e')
         r_Group.addButton(r_symm)
         r_Group.addButton(r_asym)
         r_symm.clicked.connect(self.changesym)
         r_asym.clicked.connect(self.changesym)
-        
+
         r_symm.click()
-        
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             Qt.Horizontal,
@@ -763,23 +816,21 @@ class MDialogGPGSym(QDialog):
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        
-        
+
         lo.addWidget(self.lab, 1,1)
         lo.addWidget(r_symm,   2,1)
         lo.addWidget(r_asym,   3,1)
         lo.addWidget(buttons,  4,1)
-        
+
         self.adjustSize()
         self.setMinimumWidth(350)
         self.setFixedSize(self.size())
-    
+
     def changesym(self,v):
         self.sym = v
-    
+
     @staticmethod
     def getSym(*args):
         dialog = MDialogGPGSym(*args)
         if dialog.exec(): return dialog.sym
         else: return None
-
