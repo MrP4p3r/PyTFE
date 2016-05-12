@@ -1,5 +1,5 @@
 #! /usr/bin/python3.4
-#  encoding=utf8
+#  encoding=utf-8
 
 import sys
 from cx_Freeze import setup, Executable
@@ -30,11 +30,13 @@ build_exe_options = {
 base = None
 
 if sys.platform == 'win32':
-    # base = 'Win32GUI'
+    base = 'Win32GUI'
     pass
+
+target = Executable('pytfe.py', base=base, icon='icon.ico')
 
 setup( name = "PyTFE",
        version = "1.0",
        description = "",
        options = { "build_exe": build_exe_options },
-       executables = [ Executable('pytfe.py',base=base) ] )
+       executables = [ target ] )
