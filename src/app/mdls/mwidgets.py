@@ -160,8 +160,14 @@ class MSettingsWindow(QDialog):
         l = MComboBox(
             self.tr('Language'),
             [
-                ( QLocale.languageToString(QLocale.Russian), QLocale.Russian ),
-                ( QLocale.languageToString(QLocale.English), QLocale.English )
+                (
+                    self.tr(QLocale.languageToString(QLocale.Russian)),
+                    QLocale.Russian
+                ),
+                (
+                    self.tr(QLocale.languageToString(QLocale.English)),
+                    QLocale.English
+                )
             ],
             QLocale.languageToString(
                 int(self.stt.value('locale/locale',QLocale.English))

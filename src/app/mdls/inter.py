@@ -109,9 +109,14 @@ class Main(QMainWindow):
             self.app.removeTranslator(self.translator_qt)
         except:
             pass
+        try:
+            self.app.removeTranslator(self.translator_com)
+        except:
+            pass
 
         self.translator_app = QTranslator()
         self.translator_qt  = QTranslator()
+        self.translator_com = QTranslator()
 
         self.locale = QLocale(
             int(self.stt.value('locale/locale',QLocale.English))
@@ -126,6 +131,11 @@ class Main(QMainWindow):
             self.locale, 'qt', '_', self.locres('tr'), '.qm'
         )
         if q: self.app.installTranslator(self.translator_qt)
+
+        q = self.translator_com.load(
+            'com',self.locres('tr'),'','.qm'
+        )
+        if q: print('da'); self.app.installTranslator(self.translator_com)
 
     def updateLanguage(self):
         self.A['file'].setTitle(self.tr('File'))
