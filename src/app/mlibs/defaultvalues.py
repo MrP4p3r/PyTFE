@@ -14,3 +14,5 @@ NOT_TEXT       = 1
 NOT_SUPPORTED  = 2
 INTERNAL_ERROR = 3
 NOT_AVAILABLE  = 4
+
+PATH_CONFIG = '~/.pytfe/config.ini'

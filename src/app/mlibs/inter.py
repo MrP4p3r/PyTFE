@@ -46,7 +46,7 @@ class Main(QMainWindow):
         if not os.path.isdir(self.WORK_DIR):
             self.WORK_DIR = os.path.expanduser('~')
 
-        self.stt = QSettings(self.locres('config.ini'),QSettings.IniFormat)
+        self.stt = QSettings(os.path.expanduser(PATH_CONFIG),QSettings.IniFormat)
         self.loadTranslator()
         self.initUI()
         self.loadSettings()
