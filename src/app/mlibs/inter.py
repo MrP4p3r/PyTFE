@@ -150,7 +150,7 @@ class Main(QMainWindow):
         self.A['sasA'].setText(self.tr('Save As...'))
         self.A['expA'].setText(self.tr('Export'))
         self.A['sttA'].setText(self.tr('Preferences'))
-        self.A['escA'].setText(self.tr('Application'))
+        self.A['escA'].setText(self.tr('Exit'))
         self.A['undoA'].setText(self.tr('Undo'))
         self.A['redoA'].setText(self.tr('Redo'))
         self.A['selaA'].setText(self.tr('Select All'))
