@@ -51,6 +51,8 @@ class Main(QMainWindow):
         self.initUI()
         self.loadSettings()
 
+        self.show()
+
         if len(sys.argv)>1:
             if os.path.isfile(sys.argv[1]):
                 self.openArgFile(sys.argv[1])
@@ -135,7 +137,7 @@ class Main(QMainWindow):
         q = self.translator_com.load(
             'com',self.locres('tr'),'','.qm'
         )
-        if q: print('da'); self.app.installTranslator(self.translator_com)
+        if q: self.app.installTranslator(self.translator_com)
 
     def updateLanguage(self):
         self.A['file'].setTitle(self.tr('File'))

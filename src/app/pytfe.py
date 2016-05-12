@@ -6,9 +6,12 @@ import os
 from mlibs.inter import Main
 
 def main():
-    path = os.path.dirname(os.path.realpath(__file__))
+    if getattr(sys, 'frozen', False):
+        path = os.path.dirname(os.path.realpath(sys.executable))
+    else:
+        path = os.path.dirname(os.path.realpath(__file__))
     main = Main(path)
-    main.show()
+    # main.show()
     sys.exit(main.app.exec_())
 
 if __name__ == "__main__":

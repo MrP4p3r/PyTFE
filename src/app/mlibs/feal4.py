@@ -1,21 +1,27 @@
-from os.path import abspath,dirname,realpath,join
-from ctypes import *
 import sys
+import os.path
+from ctypes import *
 
 class feal4:
     key = None
+    # key length = 64 bits = 8 bytes
     keylength = 8
+    # block length = 64 bits = 8 bytes
     blocksize = 8
     def __init__(self,key=None):
         if not isinstance(key,bytes):
             raise TypeError('Key must be bytes')
         if len(key) < self.keylength:
             raise ValueError('Key size must be at least %i bytes'%self.keylength)
+
+        if getattr(sys, 'frozen', False):
+            path = os.path.dirname(os.path.realpath(sys.executable))
+        else:
+            path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        libpath = os.path.join(path,'mlibs','win32','feal4.dll')
+        self.dll = WinDLL(libpath)
         
         self.key = create_string_buffer(key)
-        self.dll = WinDLL(
-            join( dirname(realpath(__file__)), 'win32', 'feal4.dll' )
-        )
     def __del__(self):
         try:
             libHandle = self.dll._handle
@@ -41,9 +47,3 @@ class feal4:
         _clen  = c_ulong(clen)
         self.dll.DecryptChunk(_chunk,_clen,self.key)
         return _chunk.raw[:-1]
-    
-if __name__=='__main__':
-    f = feal4(b'\x01\x02\x03\x04\x05\x06\x07\x08')
-
-
-
