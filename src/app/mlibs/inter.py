@@ -513,7 +513,7 @@ class Main(QMainWindow):
     def openArgFile(self,path):
         res = self.openFile(path)
         if res or res is None:
-            exit()
+            sys.exit()
 
     def openFile(self,path):
         #TODO
