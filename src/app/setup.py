@@ -1,5 +1,5 @@
 #! /usr/bin/python3.4
-#  encoding=utf-8
+# -*- coding: utf-8 -*-
 
 import sys
 from cx_Freeze import setup, Executable
@@ -18,8 +18,8 @@ build_exe_options = {
         ('tr/tr_en.qm', 'tr/tr_en.qm'),
         ('tr/qt_ru.qm', 'tr/qt_ru.qm'),
         ('tr/tr_ru.qm', 'tr/tr_ru.qm'),
-        ('mlibs/win32/feal4.dll','mlibs/win32/feal4.dll'),
-        ('mlibs/win32/blowfish.dll','mlibs/win32/blowfish.dll'),
+        ('mlibs/win32/feal4.dll', 'mlibs/win32/feal4.dll'),
+        ('mlibs/win32/blowfish.dll', 'mlibs/win32/blowfish.dll'),
     ],
     'include_msvcr': True,
     'zip_includes': [],

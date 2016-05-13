@@ -1,5 +1,5 @@
 #! /usr/bin/python3.4
-#  encoding=utf8
+# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -21,10 +21,10 @@ class Main(QMainWindow):
     APP_TITLE = 'PyTFE'
     WORK_DIR  = '.'
     PATH      = None
-    FILE_FORMATS = {"TFE (*.tfe)": '.tfe'}
-    _FILE_FORMATS = {'.tfe'}
-    EXPORT_FILE_FORMATS = {"Symmetric GPG (*.gpg)": '.gpg'}
-    _EXPORT_FILE_FORMATS = {'.gpg'}
+    FILE_FORMATS = { 'TFE (*.tfe)': '.tfe' }
+    _FILE_FORMATS = { '.tfe' }
+    EXPORT_FILE_FORMATS = { 'Symmetric GPG (*.gpg)': '.gpg'}
+    _EXPORT_FILE_FORMATS = { '.gpg' }
 
     # параметры открытого файла
     FILE_FORMAT = None
@@ -35,67 +35,68 @@ class Main(QMainWindow):
     FILE_OPENED = False
     FILE_SAVED = True
 
-    def __init__(self,path,*args):
+    def __init__(self, path, *args):
         self.app = QApplication(sys.argv)
         self.app.setApplicationName(self.APP_TITLE)
         super().__init__(*args)
 
         self.PATH = path
-
-        self.WORK_DIR = os.path.join(os.path.expanduser('~'),'Desktop')
+        self.WORK_DIR = os.path.join(os.path.expanduser('~'), 'Desktop')
         if not os.path.isdir(self.WORK_DIR):
             self.WORK_DIR = os.path.expanduser('~')
 
-        self.stt = QSettings(os.path.expanduser(PATH_CONFIG),QSettings.IniFormat)
+        self.stt = QSettings(os.path.expanduser(PATH_CONFIG), QSettings.IniFormat)
         self.loadTranslator()
         self.initUI()
         self.loadSettings()
 
         self.show()
 
-        if len(sys.argv)>1:
+        if len(sys.argv) > 1:
             if os.path.isfile(sys.argv[1]):
                 self.openArgFile(sys.argv[1])
 
-    def locres(self,fname):
-        return os.path.join(self.PATH,fname)
+    def locres(self, fname):
+        return os.path.join(self.PATH, fname)
 
     def saveSettings(self):
-        self.stt.setValue('window/geometry',self.geometry())
+        self.stt.setValue('window/geometry', self.geometry())
 
-        #p = self.text.palette()
-        #f = self.text.font()
+        '''
+        p = self.text.palette()
+        f = self.text.font()
 
-        #self.stt.beginGroup('text')
-        #self.stt.setValue('base',p.color(QPalette.Base).name())
-        #self.stt.setValue('text',p.color(QPalette.Text).name())
-        #self.stt.setValue('highlight',p.color(QPalette.Highlight).name())
-        #self.stt.setValue('highlighttext',p.color(QPalette.HighlightedText).name())
-        #self.stt.setValue('fontfamily',f.family())
-        #self.stt.setValue('fontsize',f.pointSize())
-        #self.stt.endGroup()
+        self.stt.beginGroup('text')
+        self.stt.setValue('base', p.color(QPalette.Base).name())
+        self.stt.setValue('text', p.color(QPalette.Text).name())
+        self.stt.setValue('highlight', p.color(QPalette.Highlight).name())
+        self.stt.setValue('highlighttext', p.color(QPalette.HighlightedText).name())
+        self.stt.setValue('fontfamily', f.family())
+        self.stt.setValue('fontsize', f.pointSize())
+        self.stt.endGroup()
 
-        #self.stt.setValue('app/default_algo',self.DEFAULT_ALGO)
-        #self.stt.setValue('app/use_default_algo',self.USE_DEFAULT_ALGO)
+        self.stt.setValue('app/default_algo', self.DEFAULT_ALGO)
+        self.stt.setValue('app/use_default_algo', self.USE_DEFAULT_ALGO)
+        '''
 
     def loadSettings(self):
-        self.DEFAULT_ALGO = self.stt.value('app/default_algo','Blowfish')
-        self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo',True))
+        self.DEFAULT_ALGO = self.stt.value('app/default_algo', 'Blowfish')
+        self.USE_DEFAULT_ALGO = mbool(self.stt.value('app/use_default_algo', True))
 
         p = self.text.palette()
         f = self.text.font()
 
-        col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
-        col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
-        col3 = self.stt.value('text/highlight',DEFAULT_TEXT_HIGHLIGHT_C)
-        col4 = self.stt.value('text/highlighttext',DEFAULT_TEXT_HIGHLIGHTTEXT_C)
-        p.setColor(QPalette.Base,QColor(col1))
-        p.setColor(QPalette.Text,QColor(col2))
-        p.setColor(QPalette.Highlight,QColor(col3))
-        p.setColor(QPalette.HighlightedText,QColor(col4))
+        col1 = self.stt.value('text/base', DEFAULT_TEXT_BASE_C)
+        col2 = self.stt.value('text/text', DEFAULT_TEXT_TEXT_C)
+        col3 = self.stt.value('text/highlight', DEFAULT_TEXT_HIGHLIGHT_C)
+        col4 = self.stt.value('text/highlighttext', DEFAULT_TEXT_HIGHLIGHTTEXT_C)
+        p.setColor(QPalette.Base, QColor(col1))
+        p.setColor(QPalette.Text, QColor(col2))
+        p.setColor(QPalette.Highlight, QColor(col3))
+        p.setColor(QPalette.HighlightedText, QColor(col4))
 
-        ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
-        fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
+        ff = self.stt.value('text/fontfamily', DEFAULT_TEXT_FONTFAMILY)
+        fs = int(self.stt.value('text/fontsize', DEFAULT_TEXT_FONTSIZE))
         f.setFamily(ff)
         f.setPointSize(fs)
 
@@ -103,25 +104,21 @@ class Main(QMainWindow):
         self.text.setFont(f)
 
     def loadTranslator(self):
-        try:
-            self.app.removeTranslator(self.translator_app)
-        except:
-            pass
-        try:
-            self.app.removeTranslator(self.translator_qt)
-        except:
-            pass
-        try:
-            self.app.removeTranslator(self.translator_com)
-        except:
-            pass
+        try: self.app.removeTranslator(self.translator_app)
+        except: pass
+
+        try: self.app.removeTranslator(self.translator_qt)
+        except: pass
+
+        try: self.app.removeTranslator(self.translator_com)
+        except: pass
 
         self.translator_app = QTranslator()
         self.translator_qt  = QTranslator()
         self.translator_com = QTranslator()
 
         self.locale = QLocale(
-            int(self.stt.value('locale/locale',QLocale.English))
+            int(self.stt.value('locale/locale', QLocale.English))
         )
 
         q = self.translator_app.load(
@@ -176,14 +173,16 @@ class Main(QMainWindow):
             QSize(640,480),
             self.app.desktop().availableGeometry()
         )
-        geom = self.stt.value('window/geometry',default_geom)
+
+        # set icon and load geometry from config.ini
+        geom = self.stt.value('window/geometry', default_geom)
         self.setGeometry(geom)
         self.updateWindowTitle()
         self.app_icon = QIcon()
         self.app_icon.addFile(self.locres('icon.png'), QSize(256,256))
         self.setWindowIcon(self.app_icon)
 
-        # widgets
+        # init widgets
         self.initText() # creates self.text
         self.setCentralWidget(self.text)
         self.initMenubar()
@@ -192,7 +191,8 @@ class Main(QMainWindow):
 
     def updateWindowTitle(self):
         new_title = ''
-        if not self.FILE_SAVED: new_title += '* '
+        if not self.FILE_SAVED:
+            new_title += '* '
         new_title += self.FILE_NAME
         new_title += ' - ' + self.APP_TITLE
         self.setWindowTitle(new_title)
@@ -206,17 +206,17 @@ class Main(QMainWindow):
         p = self.text.palette()
         f = QFont()
 
-        col1 = self.stt.value('text/base',DEFAULT_TEXT_BASE_C)
-        col2 = self.stt.value('text/text',DEFAULT_TEXT_TEXT_C)
-        col3 = self.stt.value('text/highligh',DEFAULT_TEXT_HIGHLIGHT_C)
-        col4 = self.stt.value('text/highlightext',DEFAULT_TEXT_HIGHLIGHTTEXT_C)
-        p.setColor(QPalette.Base,QColor(col1))
-        p.setColor(QPalette.Text,QColor(col2))
-        p.setColor(QPalette.Highlight,QColor(col3))
-        p.setColor(QPalette.HighlightedText,QColor(col4))
+        col1 = self.stt.value('text/base', DEFAULT_TEXT_BASE_C)
+        col2 = self.stt.value('text/text', DEFAULT_TEXT_TEXT_C)
+        col3 = self.stt.value('text/highligh', DEFAULT_TEXT_HIGHLIGHT_C)
+        col4 = self.stt.value('text/highlightext', DEFAULT_TEXT_HIGHLIGHTTEXT_C)
+        p.setColor(QPalette.Base, QColor(col1))
+        p.setColor(QPalette.Text, QColor(col2))
+        p.setColor(QPalette.Highlight, QColor(col3))
+        p.setColor(QPalette.HighlightedText, QColor(col4))
 
-        ff = self.stt.value('text/fontfamily',DEFAULT_TEXT_FONTFAMILY)
-        fs = int(self.stt.value('text/fontsize',DEFAULT_TEXT_FONTSIZE))
+        ff = self.stt.value('text/fontfamily', DEFAULT_TEXT_FONTFAMILY)
+        fs = int(self.stt.value('text/fontsize', DEFAULT_TEXT_FONTSIZE))
         f.setFamily(ff)
         f.setPointSize(fs)
 
@@ -284,7 +284,7 @@ class Main(QMainWindow):
         self.A['undoA'].triggered.connect(self.text.undo)
 
         self.A['redoA'] = QAction(self.tr('Redo'),self)
-        self.A['redoA'].setShortcuts(['Ctrl+Y','Ctrl+Shift+Z'])
+        self.A['redoA'].setShortcuts(['Ctrl+Y', 'Ctrl+Shift+Z'])
         self.A['redoA'].triggered.connect(self.text.redo)
 
         self.A['selaA'] = QAction(self.tr('Select All'),self)
@@ -344,10 +344,13 @@ class Main(QMainWindow):
 
     def f_new(self):
         # ATTENTION!
-        subprocess.Popen('python '+sys.argv[0],shell=False)
+        if getattr(sys, 'frozen', False):
+            subprocess.Popen(sys.executable, shell=False)
+        else:
+            subprocess.Popen('python '+sys.argv[0], shell=False)
 
     def f_open(self):
-        suggested_name = os.path.join(self.WORK_DIR,'*.*')
+        suggested_name = os.path.join(self.WORK_DIR, '*.*')
         path,ext = QFileDialog.getOpenFileName(
             self,
             self.tr('Open File'),
@@ -357,9 +360,7 @@ class Main(QMainWindow):
         if not path: return
 
         self.openFile(path)
-
         self.updateWindowTitle()
-        return
 
     def f_save(self):
         if self.FILE_OPENED:
@@ -383,11 +384,12 @@ class Main(QMainWindow):
         # запрос файла у пользователя
         self.FILE_OPENED = False
         if self.FILE_PATH is None:
-            suggested_name = os.path.join(self.WORK_DIR,self.FILE_NAME)
+            suggested_name = os.path.join(self.WORK_DIR, self.FILE_NAME)
         else:
             suggested_name = self.FILE_PATH
         path,ext = QFileDialog.getSaveFileName(
-            self,self.tr('Save File'),
+            self,
+            self.tr('Save File'),
             suggested_name,
             ";;".join(self.FILE_FORMATS)
         )
@@ -410,11 +412,12 @@ class Main(QMainWindow):
 
     def f_export(self):
         if self.FILE_PATH is None:
-            suggested_name = os.path.join(self.WORK_DIR,self.FILE_NAME)
+            suggested_name = os.path.join(self.WORK_DIR, self.FILE_NAME)
         else:
             suggested_name = os.path.splitext(self.FILE_PATH)[0]
         path,ext = QFileDialog.getSaveFileName(
-            self,self.tr('Export'),
+            self,
+            self.tr('Export'),
             suggested_name,
             ";;".join(self.EXPORT_FILE_FORMATS)
         )
@@ -440,7 +443,7 @@ class Main(QMainWindow):
         return res
 
     def f_settings(self):
-        q = MSettingsWindow(self.stt,self).exec()
+        q = MSettingsWindow(self.stt, self).exec()
         self.loadSettings()
         self.loadTranslator()
         self.updateLanguage()
@@ -464,7 +467,7 @@ class Main(QMainWindow):
         "<a href='https://github.com/MrP4p3r/PyTFE'>GitHub Repository</a>"
         )
 
-        QMessageBox.about(self,self.APP_TITLE,s)
+        QMessageBox.about(self, self.APP_TITLE,s)
 
     # ---------- EVENT HANDLERS ----------
 
@@ -473,20 +476,20 @@ class Main(QMainWindow):
             self.FILE_SAVED = False
             self.updateWindowTitle()
 
-    def dragEnterEvent(self,event):
+    def dragEnterEvent(self, event):
         mime = event.mimeData()
         if mime.hasUrls():
             urls = mime.urls()
             if len(urls) == 1 and urls[0].toLocalFile():
                 event.acceptProposedAction()
 
-    def dropEvent(self,event):
+    def dropEvent(self, event):
         mime = event.mimeData()
         if mime.hasUrls():
             urls = mime.urls()
             self.openFile(urls[0].toLocalFile())
 
-    def closeEvent(self,event):
+    def closeEvent(self, event):
         if not self.text.toPlainText().strip() and self.FILE_PATH is None:
             event.accept()
         elif self.FILE_SAVED:
@@ -515,7 +518,7 @@ class Main(QMainWindow):
         if res or res is None:
             sys.exit()
 
-    def openFile(self,path):
+    def openFile(self, path):
         #TODO
         ext = None
         _ext = os.path.splitext(path)[1]
@@ -535,7 +538,7 @@ class Main(QMainWindow):
 
         return res
 
-    def save_to_tfe(self,path):
+    def save_to_tfe(self, path):
         if not self.FILE_OPENED:
             d = self.passwordInput()
             d.setLabelText(self.tr('Enter password:'))
@@ -543,16 +546,18 @@ class Main(QMainWindow):
                 # ввод пароля
                 if not d.exec(): return
                 pas1 = d.textValue()
-                if len(pas1)<4:
+                if len(pas1) < 4:
                     d.setLabelText(
                         self.tr('Password is too short. Enter password:')
                     )
                     continue
                 d.setTextValue('')
                 d.setLabelText(self.tr('Repeat password:'))
+
                 # повторный ввод пароля
                 if not d.exec(): return
                 pas2 = d.textValue()
+
                 # проверка пароля
                 if pas1!=pas2:
                     d.setLabelText(
@@ -571,23 +576,30 @@ class Main(QMainWindow):
         s = self.text.toPlainText()
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
-        tpath = path+'~'
-        with open(tpath,'wb') as bo:
+        tpath = path + '~'
+
+        with open(tpath, 'wb') as bo:
             res = 0
-            try: tfe.EncryptBuffer(bi,bo,len(b),pas,alg=alg,hasht="MD5")
-            except: res = 1; traceback.print_exc()
+            try:
+                tfe.EncryptBuffer(bi, bo, len(b), pas, alg=alg, hasht="MD5")
+            except:
+                res = 1
+                traceback.print_exc()
+
         if res == 0:
-            os.replace(tpath,path)
-            self.fileOpened('.tfe',path,pas,alg)
+            os.replace(tpath, path)
+            self.fileOpened('.tfe', path, pas, alg)
             return OK
         else:
             os.remove(tpath) # MAY CAUSE PROBLEMS
             return INTERNAL_ERROR
 
-    def open_from_tfe(self,path):
+    def open_from_tfe(self, path):
         if not tfe.isTfeFile(path):
             return NOT_SUPPORTED
+
         alg = tfe.whatAlgoIn(path)
+
         d = self.passwordInput()
         d.setLabelText(self.tr('Enter password:'))
         while True:
@@ -597,13 +609,15 @@ class Main(QMainWindow):
             pas = pas1.encode('utf-8')          # байты, байты
             bo  = BytesIO()
             res = 0
-            with open(path,'rb') as bi:
-                try: tfe.DecryptBuffer(bi,bo,pas)
+
+            with open(path, 'rb') as bi:
+                try: tfe.DecryptBuffer(bi, bo, pas)
                 except ValueError:
                     res = 1
                 except:
                     res = 2
                     traceback.print_exc()
+
             #bi.close()
             if res == 0:
                 bo.seek(0,0)
@@ -614,14 +628,15 @@ class Main(QMainWindow):
                     traceback.print_exc()
                     res = self.openError(NOT_TEXT)
                     if res == QMessageBox.Yes:
-                        try: s = b.decode('ascii')
+                        try:
+                            s = b.decode('ascii')
                         except:
                             traceback.print_exc();
                             return INTERNAL_ERROR
                     else:
                         return
                 self.text.setPlainText(s)
-                self.fileOpened('.tfe',path,pas,alg)
+                self.fileOpened('.tfe', path, pas, alg)
                 return OK
             elif res == 1:
                 d.setLabelText(self.tr('Wrong password. Enter password:'))
@@ -629,7 +644,7 @@ class Main(QMainWindow):
             else:
                 return INTERNAL_ERROR
 
-    def export_to_gpg(self,path):
+    def export_to_gpg(self, path):
         if os.system('gpg --version'): return NOT_AVAILABLE
         sym = '-c'
         # раскомментить после добавления ассиметричного шифрования
@@ -643,9 +658,11 @@ class Main(QMainWindow):
                 pas1 = d.textValue()
                 d.setTextValue('')
                 d.setLabelText(self.tr('Repeat password:'))
+
                 # повторный ввод пароля
                 if not d.exec(): return
                 pas2 = d.textValue()
+
                 # проверка пароля
                 if pas1!=pas2:
                     d.setLabelText(self.tr('Passwords do not match. Enter password:'))
@@ -660,9 +677,9 @@ class Main(QMainWindow):
             #bo = open(path,'wb')
             res = 0
             print([
-                        'gpg','-c','--no-use-agent','--passphrase',pas,
-                        '--batch','--yes','-o',path
-                    ])
+                'gpg', '-c', '--no-use-agent', '--passphrase', pas,
+                '--batch', '--yes', '-o', path
+            ])
             try:
                 p = subprocess.Popen(
                     [
@@ -673,7 +690,9 @@ class Main(QMainWindow):
                 )
                 print(p.communicate(b))
                 print(p.terminate())
-            except: res = 1; traceback.print_exc()
+            except:
+                res = 1
+                traceback.print_exc()
             if res == 0:
                 return OK
             else:
@@ -682,7 +701,7 @@ class Main(QMainWindow):
             # TODO
             #if not self.FILE_OPENED:
             d = QInputDialog(self)
-            d.resize(300,d.height())
+            d.resize(300, d.height())
             d.setTextEchoMode(QLineEdit.Normal)
             d.setWindowTitle(self.tr('Recipient'))
             d.setLabelText(self.tr('Enter recipient:'))
@@ -696,12 +715,14 @@ class Main(QMainWindow):
             res = 0
             try:
                 p = subprocess.Popen(
-                    ['gpg','-e','--no-use-agent','-r',name,'-o',path],
+                    [ 'gpg', '-e', '--no-use-agent', '-r', name, '-o', path ],
                     stdin = subprocess.PIPE
                 )
                 p.communicate(b)
                 p.terminate()
-            except: res = 1; traceback.print_exc()
+            except:
+                res = 1
+                traceback.print_exc()
             #bo.close()
             if res == 0:
                 # TODO
@@ -709,65 +730,71 @@ class Main(QMainWindow):
             else:
                 return INTERNAL_ERROR
 
-    def open_from_gpg(self,path):
-        # ['gpg','--no-use-agent','--batch','--yes','-d',path] # symmetric
-        # ['gpg','--no-use-agent','--batch','--yes ????????????
+    def open_from_gpg(self, path):
+        # ['gpg', '--no-use-agent', '--batch', '--yes', '-d', path] # symmetric
+        # ['gpg', '--no-use-agent', '--batch', '--yes ????????????
         ...
 
     # ---------- NOTIFIERS ----------
 
     def saveOk(self):
-        self.statusBar().showMessage(self.tr('Saved'),1500)
+        self.statusBar().showMessage(self.tr('Saved'), 1500)
 
-    def saveError(self,er):
+    def saveError(self, er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('Internal exception occurred while saving the file')
             )
 
     def openOk(self):
-        self.statusBar().showMessage(self.tr('File opened'),1500) #?
+        self.statusBar().showMessage(self.tr('File opened'), 1500) #?
         self.updateWindowTitle()
 
-    def openError(self,er):
+    def openError(self, er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('Internal exception occurred while opening the file')
             )
         elif er == NOT_SUPPORTED:
             QMessageBox.critical(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('This file format is not supported or file is corrupted')
             )
         elif er == NOT_TEXT:
-            # может не понадобится
             res = QMessageBox.question(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('Decrypted data is not text. Continue?')
             )
             return res
 
     def exportOk(self):
-        self.statusBar().showMessage(self.tr('Saved'),1500)
+        self.statusBar().showMessage(self.tr('Saved'), 1500)
 
-    def exportError(self,er):
+    def exportError(self, er):
         if er == INTERNAL_ERROR:
             QMessageBox.critical(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('Internal exception occured while exporting the file')
             )
         elif er == NOT_AVAILABLE:
             QMessageBox.critical(
-                self, self.tr('Error'),
+                self,
+                self.tr('Error'),
                 self.tr('Export to this external format is not available')
             )
 
 
     def saveFileQuestion(self):
         res = QMessageBox.question(
-            self, self.tr('File Not Saved'),
+            self,
+            self.tr('File Not Saved'),
             self.tr('Save changes to %s?')%self.FILE_NAME,
             buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
         )
@@ -775,12 +802,12 @@ class Main(QMainWindow):
 
     def passwordInput(self):
         d = QInputDialog(self)
-        d.resize(300,d.height())
+        d.resize(300, d.height())
         d.setTextEchoMode(QLineEdit.Password)
         d.setWindowTitle(self.tr('Password'))
         return d
 
-    def fileOpened(self,format,path,pas,alg):
+    def fileOpened(self, format, path, pas, alg):
         self.FILE_FORMAT     = format
         self.FILE_PATH       = path
         self.WORK_DIR,self.FILE_NAME = os.path.split(path)
@@ -793,16 +820,19 @@ class Main(QMainWindow):
 
 class MRadioButton(QRadioButton):
     clicked = pyqtSignal(object)
-    def __init__(self,text,rvalue,*args):
-        super().__init__(text,*args)
+
+    def __init__(self, text, rvalue, *args):
+        super().__init__(text, *args)
         super().clicked.connect(self._valueEmitter)
         self.rvalue = rvalue
-    def _valueEmitter(self,b):
+
+    def _valueEmitter(self, b):
         self.clicked.emit(self.rvalue)
 
 class MDialogGPGSym(QDialog):
     sym = None
-    def __init__(self,*args):
+
+    def __init__(self, *args):
         super().__init__(*args)
         self.setWindowFlags(self.windowFlags()&~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle(self.tr('GPG'))
@@ -812,8 +842,8 @@ class MDialogGPGSym(QDialog):
         self.lab.setText(self.tr('Encryption algorithm'))
 
         r_Group = QButtonGroup()
-        r_symm = MRadioButton(self.tr('Symmetric'),'-c')
-        r_asym = MRadioButton(self.tr('Asymmetric'),'-e')
+        r_symm = MRadioButton(self.tr('Symmetric'), '-c')
+        r_asym = MRadioButton(self.tr('Asymmetric'), '-e')
         r_Group.addButton(r_symm)
         r_Group.addButton(r_asym)
         r_symm.clicked.connect(self.changesym)
@@ -844,5 +874,7 @@ class MDialogGPGSym(QDialog):
     @staticmethod
     def getSym(*args):
         dialog = MDialogGPGSym(*args)
-        if dialog.exec(): return dialog.sym
-        else: return None
+        if dialog.exec():
+            return dialog.sym
+        else:
+            return None

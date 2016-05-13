@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import os.path
 from ctypes import *
@@ -11,8 +13,9 @@ class blowfish:
     skeylength = 192//8
     # block length = 64 bits = 8 bytes
     blocksize  = 8
-    def __init__(self,skey=None):
-        if not isinstance(skey,bytes):
+
+    def __init__(self, skey=None):
+        if not isinstance(skey, bytes):
             raise TypeError('Key must be bytes')
         if len(skey) < self.skeylength:
             raise ValueError('Key size must be at least %i bytes'%self.skeylength)
@@ -21,14 +24,15 @@ class blowfish:
             path = os.path.dirname(os.path.realpath(sys.executable))
         else:
             path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        libpath = os.path.join(path,'mlibs','win32','blowfish.dll')
+        libpath = os.path.join(path, 'mlibs', 'win32', 'blowfish.dll')
 
         self.dll = WinDLL(libpath)
 
         self.skey = create_string_buffer(skey)
         self.key  = create_string_buffer(self.keylength)
 
-        self.dll._gen_key192(self.skey,self.key)
+        self.dll._gen_key192(self.skey, self.key)
+
     def __del__(self):
         try:
             del self.key
@@ -37,21 +41,25 @@ class blowfish:
             windll.kernel32.FreeLibrary(libHandle)
         except:
             pass
-    def Encrypt(self,data):
+
+    def Encrypt(self, data):
         _data = create_string_buffer(data)
-        self.dll.Encrypt( _data , self.key )
+        self.dll.Encrypt(_data, self.key)
         return _data.raw[:-1]
-    def Decrypt(self,data):
+
+    def Decrypt(self, data):
         _data = create_string_buffer(data)
-        self.dll.Decrypt( _data , self.key )
+        self.dll.Decrypt(_data, self.key)
         return _data.raw[:-1]
-    def EncryptChunk(self,chunk,clen):
+
+    def EncryptChunk(self, chunk, clen):
         _chunk = create_string_buffer(chunk)
         _clen  = c_ulong(clen)
-        self.dll.EncryptChunk( _chunk, _clen , self.key )
+        self.dll.EncryptChunk(_chunk, _clen, self.key)
         return _chunk.raw[:-1]
-    def DecryptChunk(self,chunk,clen):
+
+    def DecryptChunk(self, chunk, clen):
         _chunk = create_string_buffer(chunk)
         _clen  = c_ulong(clen)
-        self.dll.DecryptChunk( _chunk, _clen , self.key )
+        self.dll.DecryptChunk(_chunk, _clen, self.key)
         return _chunk.raw[:-1]
