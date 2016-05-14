@@ -21,8 +21,8 @@ class Main(QMainWindow):
     APP_TITLE = 'PyTFE'
     WORK_DIR  = '.'
     PATH      = None
-    FILE_FORMATS = { 'TFE (*.tfe)': '.tfe' }
-    _FILE_FORMATS = { '.tfe' }
+    FILE_FORMATS = { 'TFE (*.tfe)': '.tfe', 'TXT (*.txt)': '.txt' }
+    _FILE_FORMATS = { '.tfe', '.txt' }
     EXPORT_FILE_FORMATS = { 'Symmetric GPG (*.gpg)': '.gpg'}
     _EXPORT_FILE_FORMATS = { '.gpg' }
 
@@ -368,10 +368,14 @@ class Main(QMainWindow):
             res = None
             if self.FILE_FORMAT == '.tfe':
                 res = self.save_to_tfe(self.FILE_PATH)
+            elif self.FILE_FORMAT == '.txt':
+                res = self.save_plain_text(self.FILE_PATH)
+
             if res == OK:
                 self.saveOk()
             elif res == INTERNAL_ERROR:
                 self.saveError(res)
+
             self.updateWindowTitle()
             return res
         else:
@@ -402,6 +406,8 @@ class Main(QMainWindow):
         res = None
         if ext == '.tfe':
             res = self.save_to_tfe(path)
+        elif ext == '.txt':
+            res = self.save_plain_text(path)
 
         if res == OK:
             self.saveOk()
@@ -528,6 +534,8 @@ class Main(QMainWindow):
             res = NOT_SUPPORTED
         elif ext == '.tfe':
             res = self.open_from_tfe(path)
+        elif ext == '.txt':
+            res = self.open_plain_text(path)
 
         if res == OK:
             self.openOk()
@@ -643,6 +651,43 @@ class Main(QMainWindow):
                 continue
             else:
                 return INTERNAL_ERROR
+
+    def save_plain_text(self, path):
+        s = self.text.toPlainText()
+        tpath = path + '~'
+
+        with open(tpath, 'w') as bo:
+            res = 0
+            try:
+                bo.write(s)
+            except:
+                res = 1
+                traceback.print_exc()
+
+        if res == 0:
+            os.replace(tpath, path)
+            self.fileOpened('.txt', path, None, None)
+            return OK
+        else:
+            os.remove(tpath) # MAY CAUSE PROBLEMS
+            return INTERNAL_ERROR
+
+    def open_plain_text(self, path):
+        res = 0
+        with open(path, 'r') as bi:
+            try:
+                s = bi.read()
+            except:
+                res = 2
+                traceback.print_exc()
+
+        #bi.close()
+        if res == 0:
+            self.text.setPlainText(s)
+            self.fileOpened('.txt', path, None, None)
+            return OK
+        else:
+            return INTERNAL_ERROR
 
     def export_to_gpg(self, path):
         if os.system('gpg --version'): return NOT_AVAILABLE
