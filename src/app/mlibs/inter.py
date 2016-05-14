@@ -208,7 +208,7 @@ class Main(QMainWindow):
 
         col1 = self.stt.value('text/base', DEFAULT_TEXT_BASE_C)
         col2 = self.stt.value('text/text', DEFAULT_TEXT_TEXT_C)
-        col3 = self.stt.value('text/highligh', DEFAULT_TEXT_HIGHLIGHT_C)
+        col3 = self.stt.value('text/highlight', DEFAULT_TEXT_HIGHLIGHT_C)
         col4 = self.stt.value('text/highlightext', DEFAULT_TEXT_HIGHLIGHTTEXT_C)
         p.setColor(QPalette.Base, QColor(col1))
         p.setColor(QPalette.Text, QColor(col2))
