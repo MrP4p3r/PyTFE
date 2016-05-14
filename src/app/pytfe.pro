@@ -1,5 +1,5 @@
-SOURCES += pytfe.py mdls/inter.py mdls/mwidgets.py\
-          mdls/commonfunctions.py mdls/defaultvalues.py\
-          mdls/tfe.py\
-          mdls/feal4.py mdls/blowfish.py mdls/pbkdf2.py
+SOURCES += pytfete.py mlibs/interte.py mlibs/mwidgetste.py\
+          mlibs/commonfunctions.py mlibs/defaultvalues.py\
+          mlibs/tfe.py\
+          mlibs/feal4.py mlibs/blowfish.py mlibs/pbkdf2.py
 TRANSLATIONS = tr/tr_en.ts tr/tr_ru.ts

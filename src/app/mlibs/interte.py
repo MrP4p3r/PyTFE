@@ -15,7 +15,7 @@ from PyQt5.QtCore    import *
 from . import tfe
 from .defaultvalues   import *
 from .commonfunctions import *
-from .mwidgets        import *
+from .mwidgetste      import *
 
 class Main(QMainWindow):
     APP_TITLE = 'PyTFE'

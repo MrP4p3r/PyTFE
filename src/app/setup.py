@@ -33,10 +33,10 @@ if sys.platform == 'win32':
     base = 'Win32GUI'
     pass
 
-target = Executable('pytfe.py', base=base, icon='icon.ico')
+target = Executable('pytfete.py', base=base, icon='icon.ico')
 
 setup( name = "PyTFE",
-       version = "1.0",
+       version = "1.0.0",
        description = "",
        options = { "build_exe": build_exe_options },
        executables = [ target ] )

@@ -3,7 +3,7 @@
 
 import sys
 import os
-from mlibs.inter import Main
+from mlibs.interte import Main
 
 def main():
     if getattr(sys, 'frozen', False):
