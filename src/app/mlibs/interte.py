@@ -550,7 +550,9 @@ class Main(QMainWindow):
         return res
 
     def save_to_tfe(self, path):
-        if not self.FILE_OPENED:
+        s = self.text.toPlainText()
+
+        if (self.FILE_PASSPHRASE is None) and s:
             d = self.passwordInput()
             d.setLabelText(self.tr('Enter password:'))
             while True:
@@ -578,13 +580,19 @@ class Main(QMainWindow):
                     break
                 d.setTextValue('')
             pas = pas1.encode('utf-8')          # пароль в байтах
+        else:
+            if self.FILE_PASSPHRASE is not None:
+                pas = self.FILE_PASSPHRASE
+            else:
+                pas = b''
+
+        if self.FILE_ALGO is None:
             alg = self.DEFAULT_ALGO
         else:
-            pas = self.FILE_PASSPHRASE
             alg = self.FILE_ALGO if not self.USE_DEFAULT_ALGO \
                   else self.DEFAULT_ALGO
 
-        s = self.text.toPlainText()
+        #s = self.text.toPlainText()
         b = s.encode('utf-8')               # КОДИРОВОЧКА
         bi = BytesIO(b)
         tpath = path + '~'
@@ -597,6 +605,9 @@ class Main(QMainWindow):
                 res = 1
                 traceback.print_exc()
 
+        if pas == b'':
+            pas = None
+
         if res == 0:
             os.replace(tpath, path)
             self.fileOpened('.tfe', path, pas, alg, 'utf-8')
@@ -606,8 +617,16 @@ class Main(QMainWindow):
             return INTERNAL_ERROR
 
     def open_from_tfe(self, path):
-        if not tfe.isTfeFile(path):
+        q = tfe.isTfeFile(path)
+        if q == 'not tfe':
             return NOT_SUPPORTED
+        elif q == 'not supported':
+            return NOT_SUPPORTED
+        elif q == 'empty':
+            self.fileOpened('.tfe', path, None, self.DEFAULT_ALGO, 'utf-8')
+            return OK
+        elif q != 'ok':
+            return NOT_SUPPORTED # :D
 
         alg = tfe.whatAlgoIn(path)
 

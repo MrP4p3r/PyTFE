@@ -197,14 +197,20 @@ def isTfeFile(path):
     f = open(path,'rb')
     try:
         header = f.read(HEADER_LENGTH)
+        if header == b'':
+            return 'empty'
         alg, hasht, offset, blength = parseheader(header)
+        if blength == 0:
+            return 'empty'
         if (alg in algtab) and (hasht in hashtab):
-            return True
+            return 'ok'
         else:
-            return False
-    except Exception as e:
+            return 'not supported'
+    except ValueError as e:
         traceback.print_exc()
-        #raise e
+        return 'not tfe'
+    else:
+        traceback.print_exc()
     finally:
         f.close()
 
