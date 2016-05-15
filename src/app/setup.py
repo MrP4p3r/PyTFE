@@ -9,7 +9,7 @@ build_exe_options = {
         'sys', 'os', 'subprocess', 'hashlib', 'traceback', 'io',
         'ctypes', 'random', 'struct', 'string', 'hmac',
         'PyQt5.QtWidgets', 'PyQt5.QtCore', 'PyQt5.QtGui',
-        'mlibs'
+        'chardet', 'mlibs'
     ],
     'excludes': [ 'tkinter' ],
     'include_files': [
@@ -36,7 +36,7 @@ if sys.platform == 'win32':
 target = Executable('pytfete.py', base=base, icon='icon.ico')
 
 setup( name = "PyTFE",
-       version = "1.0.0",
+       version = "1.0.1",
        description = "",
        options = { "build_exe": build_exe_options },
        executables = [ target ] )
