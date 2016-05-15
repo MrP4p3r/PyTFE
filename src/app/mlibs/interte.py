@@ -8,6 +8,8 @@ import traceback
 
 from io import BytesIO
 
+import chardet
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui     import *
 from PyQt5.QtCore    import *
@@ -34,6 +36,7 @@ class Main(QMainWindow):
     FILE_ALGO = None
     FILE_OPENED = False
     FILE_SAVED = True
+    FILE_ENCODING = 'utf-8'
 
     def __init__(self, path, *args):
         self.app = QApplication(sys.argv)
@@ -596,7 +599,7 @@ class Main(QMainWindow):
 
         if res == 0:
             os.replace(tpath, path)
-            self.fileOpened('.tfe', path, pas, alg)
+            self.fileOpened('.tfe', path, pas, alg, 'utf-8')
             return OK
         else:
             os.remove(tpath) # MAY CAUSE PROBLEMS
@@ -644,7 +647,7 @@ class Main(QMainWindow):
                     else:
                         return
                 self.text.setPlainText(s)
-                self.fileOpened('.tfe', path, pas, alg)
+                self.fileOpened('.tfe', path, pas, alg, 'utf-8')
                 return OK
             elif res == 1:
                 d.setLabelText(self.tr('Wrong password. Enter password:'))
@@ -654,19 +657,20 @@ class Main(QMainWindow):
 
     def save_plain_text(self, path):
         s = self.text.toPlainText()
+        b = s.encode(self.FILE_ENCODING)
         tpath = path + '~'
 
-        with open(tpath, 'w') as bo:
+        with open(tpath, 'wb') as bo:
             res = 0
             try:
-                bo.write(s)
+                bo.write(b)
             except:
                 res = 1
                 traceback.print_exc()
 
         if res == 0:
             os.replace(tpath, path)
-            self.fileOpened('.txt', path, None, None)
+            self.fileOpened('.txt', path, None, None, self.FILE_ENCODING)
             return OK
         else:
             os.remove(tpath) # MAY CAUSE PROBLEMS
@@ -674,9 +678,11 @@ class Main(QMainWindow):
 
     def open_plain_text(self, path):
         res = 0
-        with open(path, 'r') as bi:
+        with open(path, 'rb') as bi:
             try:
-                s = bi.read()
+                b = bi.read()
+                cdn = chardet.detect(b)['encoding']
+                s = b.decode(cdn, errors='ignore')
             except:
                 res = 2
                 traceback.print_exc()
@@ -684,7 +690,7 @@ class Main(QMainWindow):
         #bi.close()
         if res == 0:
             self.text.setPlainText(s)
-            self.fileOpened('.txt', path, None, None)
+            self.fileOpened('.txt', path, None, None, cdn)
             return OK
         else:
             return INTERNAL_ERROR
@@ -852,7 +858,7 @@ class Main(QMainWindow):
         d.setWindowTitle(self.tr('Password'))
         return d
 
-    def fileOpened(self, format, path, pas, alg):
+    def fileOpened(self, format, path, pas, alg, cdn):
         self.FILE_FORMAT     = format
         self.FILE_PATH       = path
         self.WORK_DIR,self.FILE_NAME = os.path.split(path)
@@ -860,6 +866,7 @@ class Main(QMainWindow):
         self.FILE_ALGO       = alg
         self.FILE_OPENED     = True
         self.FILE_SAVED      = True
+        self.FILE_ENCODING   = cdn
 
 # ---------- ВИДЖЕТЫ ДЛЯ СОХРАНЕНИЯ ФАЙЛОВ ----------
 
