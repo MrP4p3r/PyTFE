@@ -2,7 +2,12 @@
  * Blowfish algorithm implementation
  * Author:   Gleb Getmanenko
  * Date:     02.05.16
- * Language: C (dmc compiler)
+ * Language: C
+ * 
+ * win32:
+ * gcc -std=c99 -O3 -c feal4.c
+ * gcc -s -shared -o feal4.dll feal4.o -Wl,--out-implib,libfeal4.a,--subsystem,windows
+ *
  */
 
 #include <stdio.h>

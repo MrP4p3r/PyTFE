@@ -88,7 +88,7 @@ def readchunk(bi, bls, chunksize):
         res = res + b'\x42'*q
     return res, len(res)//bls
 
-def EncryptBuffer(bi, bo, blength, pas, alg="FEAL 4", hasht="MD5"):
+def EncryptBuffer(bi, bo, blength, pas, alg="Blowfish", hasht="MD5"):
     # alg
     _alg = algtab[alg]
     _bls = _alg['blocksize']
