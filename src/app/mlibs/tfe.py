@@ -189,8 +189,8 @@ def DecryptBuffer(bi, bo, pas):
         bleft -= len(echunk)
         if clen == 0: break
         chunk = _dec.DecryptChunk(echunk, clen)
-        bo.write(echunk[:blength])
-        blength -= len(echunk)
+        bo.write(chunk[:blength])
+        blength -= len(chunk)
     del _dec
 
 def isTfeFile(path):
