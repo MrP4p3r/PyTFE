@@ -16,14 +16,14 @@ algtab = {
         "module"    : feal4,
         "genkey"    : lambda pas, salt: pbkdf2(pas, salt).read(8),
         "blocksize" : 8,
-        "chunksize" : 8*8*1024, # 64K
+        "chunksize" : 2*8*8*1024, # 2*64K
         "id"        : 1,
     },
     "Blowfish": {
         "module"    : blowfish,
         "genkey"    : lambda pas, salt: pbkdf2(pas, salt).read(24),
         "blocksize" : 8,
-        "chunksize" : 8*8*1024, # 64K
+        "chunksize" : 2*8*8*1024, # 2*64K
         "id"        : 2,
     },
 }
