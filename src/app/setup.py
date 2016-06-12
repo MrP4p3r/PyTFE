@@ -36,7 +36,7 @@ if sys.platform == 'win32':
 target = Executable('pytfete.py', base=base, icon='icon.ico')
 
 setup( name = "PyTFE",
-       version = "1.0.1",
+       version = "1.0.2",
        description = "",
        options = { "build_exe": build_exe_options },
        executables = [ target ] )
