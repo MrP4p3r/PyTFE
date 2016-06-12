@@ -203,6 +203,8 @@ class Main(QMainWindow):
     def initText(self):
         self.text = MPlainTextEdit()
 
+        self.text.setTabStopWidth(28)
+
         self.text.textChanged.connect(self.textChangedHandler)
 
         self.text.setFrameStyle(QFrame.NoFrame)
