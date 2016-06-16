@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui     import *
-from PyQt5.QtCore    import *
+# from PySide.QtWidgets import *
+from PySide.QtGui     import *
+from PySide.QtCore    import *
 
 from . import tfe
 from .defaultvalues   import *
@@ -42,7 +42,11 @@ class MComboBox(QWidget):
             else:
                 self.i1 = True
                 for i in lst: self.b.addItem(i)
-        self.b.setCurrentText(dval)
+
+        if self.i1:
+            self.b.setCurrentIndex(self.b.findText(dval))
+        else:
+            self.b.setCurrentIndex(self.b.findData(dval))
 
         self.layout().addWidget(self.a, 1, 1)
         self.layout().addWidget(self.b, 1, 2)
@@ -51,7 +55,8 @@ class MComboBox(QWidget):
         if self.i1:
             return self.b.currentText()
         else:
-            return self.b.currentData()
+            print(self.b.itemData(self.b.currentIndex()))
+            return self.b.itemData(self.b.currentIndex())
 
 class MCheckBox(QCheckBox):
 
@@ -190,17 +195,19 @@ class MSettingsWindow(QDialog):
             self.tr('Language'),
             [
                 (
-                    self.tr(QLocale.languageToString(QLocale.Russian)),
-                    QLocale.Russian
+                    self.tr(QLocale.languageToString(
+                        QLocale.Language(QLocale.Russian)
+                    )),
+                    QLocale.Language(QLocale.Russian)
                 ),
                 (
-                    self.tr(QLocale.languageToString(QLocale.English)),
-                    QLocale.English
+                    self.tr(QLocale.languageToString(
+                        QLocale.Language(QLocale.English)
+                    )),
+                    QLocale.Language(QLocale.English)
                 )
             ],
-            QLocale.languageToString(
-                int(self.stt.value('locale/locale', QLocale.English))
-            )
+            QLocale.Language(int(self.stt.value('locale/locale', QLocale.English)))
         )
         c = MColorBox(
             self.tr('Background color'),

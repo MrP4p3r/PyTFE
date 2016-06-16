@@ -10,9 +10,9 @@ from io import BytesIO
 
 import chardet
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui     import *
-from PyQt5.QtCore    import *
+# from PySide.QtWidgets import *
+from PySide.QtGui     import *
+from PySide.QtCore    import *
 
 from . import tfe
 from .defaultvalues   import *
@@ -121,7 +121,8 @@ class Main(QMainWindow):
         self.translator_com = QTranslator()
 
         self.locale = QLocale(
-            int(self.stt.value('locale/locale', QLocale.English))
+            QLocale.Language(int(self.stt.value('locale/locale', QLocale.English))),
+            QLocale.Country(0)
         )
 
         q = self.translator_app.load(
@@ -892,7 +893,7 @@ class Main(QMainWindow):
 # ---------- ВИДЖЕТЫ ДЛЯ СОХРАНЕНИЯ ФАЙЛОВ ----------
 
 class MRadioButton(QRadioButton):
-    clicked = pyqtSignal(object)
+    clicked = Signal(object)
 
     def __init__(self, text, rvalue, *args):
         super().__init__(text, *args)
