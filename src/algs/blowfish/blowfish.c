@@ -10,10 +10,18 @@
  *
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#else
+#define __stdcall
+#define __declspec(x)
+#endif
 
 #include "blowfishPS.c"
 
@@ -22,18 +30,30 @@ typedef struct {
     uint32_t S[4][256];
 } KEY;
 
+#ifdef _WIN32
 void __stdcall __declspec(dllexport)
-    _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
+    _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
 void __stdcall __declspec(dllexport)
-    _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key);
+    _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
 KEY* __stdcall __declspec(dllexport) _gen_key192( uint8_t* skey );
 KEY* __stdcall __declspec(dllexport) __gen_key192( uint8_t* skey , KEY* key );
+#endif
 
-void encrypt( uint8_t* data , KEY* key );
-void decrypt( uint8_t* data , KEY* key );
-uint32_t F( uint32_t R, KEY* key );
+#ifdef __linux__
+void EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
+void DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
+void _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
+void _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key );
+KEY* _gen_key192( uint8_t* skey , KEY* key );
+KEY* __gen_key192( uint8_t* skey , KEY* key );
+#endif
 
-void __stdcall _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
+
+void encrypt(uint8_t* data, KEY* key);
+void decrypt(uint8_t* data, KEY* key);
+uint32_t F(uint32_t R, KEY* key);
+
+void __stdcall EncryptChunk( uint8_t* chunkptr , uint32_t nblocks, KEY* key )
 {
     for ( uint32_t i = 0; i < nblocks; i++ )
     {
@@ -41,7 +61,25 @@ void __stdcall _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
     }
 }
 
-void __stdcall _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key)
+void __stdcall DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key )
+{
+    uint8_t* data = (uint8_t*)malloc(8);
+    for ( uint32_t i = 0; i < nblocks; i++ )
+    {
+        decrypt(&chunkptr[i*8],key);
+    }
+}
+
+
+void __stdcall _EncryptChunk( uint8_t* chunkptr , uint32_t nblocks, KEY* key )
+{
+    for ( uint32_t i = 0; i < nblocks; i++ )
+    {
+        encrypt(&chunkptr[i*8],key);
+    }
+}
+
+void __stdcall _DecryptChunk( uint8_t* chunkptr , uint32_t nblocks , KEY* key )
 {
     uint8_t* data = (uint8_t*)malloc(8);
     for ( uint32_t i = 0; i < nblocks; i++ )
@@ -109,10 +147,10 @@ uint32_t F(uint32_t R, KEY* key)
     return q[0];
 }
 
-KEY* __stdcall _gen_key192( uint8_t* skey )
+KEY* __stdcall _gen_key192( uint8_t* skey , KEY* key)
 {
-    KEY* key = (KEY*)malloc(sizeof(KEY));
-    __gen_key192(skey,key);
+    /* KEY* key = (KEY*)malloc(sizeof(KEY)); */
+    __gen_key192(skey, key);
     return key;
 }
 
@@ -152,9 +190,12 @@ KEY* __stdcall __declspec(dllexport) __gen_key192( uint8_t* skey , KEY* key )
     return key;
 }
 
+#ifdef _WIN32
 bool __stdcall __declspec(dllexport) APIENTRY DllMain(
     HANDLE hModule, DWORD fdwReason, LPVOID lpvReserved
 )
 {
     return TRUE;
 }
+#endif
+

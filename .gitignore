@@ -36,3 +36,5 @@ Thumbs.db
 # python ~
 ######################
 __pycache__/
+*.py[cod]
+
